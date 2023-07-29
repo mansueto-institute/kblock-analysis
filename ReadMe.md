@@ -24,8 +24,7 @@ graph LR
 G[DHS data] --> C
 A[Block complexity data] --> B[complexity-analysis.R]
 E[aggregation_func.R] --> B
-A --> C
-B --> C[dhs-analysis.R]
+A --> C[dhs-analysis.R]
 
 F[graph_funcs.R] --> D[graph-viz.R]
 J[layer_lusaka.geojson] --> D
