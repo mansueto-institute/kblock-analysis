@@ -25,13 +25,20 @@ G[DHS data] --> C
 A[Block complexity data] --> B[complexity-analysis.R]
 E[aggregation_func.R] --> B
 A --> C[dhs-analysis.R]
+B --> Z[Summary stats and<br>visualizations]
+C --> X[Statistical analysis and<br>visualizations]
 
 F[graph_funcs.R] --> D[graph-viz.R]
 J[Lusaka GeoJSON] --> D
+D --> Y[Complexity graph<br>visualization]
 
 style A fill:#eba8d3
 style G fill:#eba8d3
 style J fill:#eba8d3
+
+style Z fill: #f7f5eb
+style X fill: #f7f5eb
+style Y fill: #f7f5eb
 ```
 
 ## Contact 
