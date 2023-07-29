@@ -15,7 +15,7 @@
 ### Block complexity graph visualizations:
 
 * [graph-viz.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/graph-viz.R) visualizes block complexity in the format of a network graph.
-* [graph_funcs.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/graph_funcs.R) contains function to generate a complexity graph.
+* [graph_funcs.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/graph_funcs.R) contains a function to generate a complexity graph.
 * [layer_lusaka.geojson](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/layer_lusaka.geojson) contains data for two community areas in Lusaka, Zambia. 
 
 ### Workflow diagram:
