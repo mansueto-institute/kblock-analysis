@@ -35,7 +35,7 @@ J[layer_lusaka.geojson] --> D
 Nicholas Marchio, data scientist at the Mansueto Institute
 
 For related technical work see the following repos:
-* [https://github.com/mansueto-institute/kblock](https://github.com/mansueto-institute/kblock): Python codebase for generating the block complexity and population data available at [www.millionneighborhoods.africa](www.millionneighborhoods.africa).
-* [https://github.com/mansueto-institute/geopull](https://github.com/mansueto-institute/geopull): Python package for extracting OSM data and generating street block delineations.
-* [https://github.com/mansueto-institute/cloudtile](https://github.com/mansueto-institute/cloudtile): contains code for converting (Geo)Parquet files to PMTiles on AWS.
+* [kblock](https://github.com/mansueto-institute/kblock): Python codebase for generating the block complexity and population data available at [www.millionneighborhoods.africa](www.millionneighborhoods.africa).
+* [geopull](https://github.com/mansueto-institute/geopull): Python package for extracting OSM data and generating street block delineations.
+* [cloudtile](https://github.com/mansueto-institute/cloudtile): contains code for converting (Geo)Parquet files to PMTiles on AWS.
 
