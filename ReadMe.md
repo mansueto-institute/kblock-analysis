@@ -27,6 +27,7 @@ E[aggregation_func.R] --> B
 A --> C[dhs-analysis.R]
 B --> Z[Summary stats and<br>visualizations]
 C --> X[Statistical analysis and<br>visualizations]
+Q[github.com/mansueto-institute/kblock] --> A
 
 F[graph_funcs.R] --> D[graph-viz.R]
 J[layer_lusaka.geojson] --> D
@@ -42,6 +43,8 @@ style Y fill: #f7f5eb
 
 style F fill: #ADD8E6
 style E fill: #ADD8E6
+
+style Q fill: #00A300
 ```
 
 ## Contact 
