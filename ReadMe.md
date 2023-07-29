@@ -27,7 +27,7 @@ E[aggregation_func.R] --> B
 A --> C[dhs-analysis.R]
 
 F[graph_funcs.R] --> D[graph-viz.R]
-J{layer_lusaka.geojson} --> D
+J{Lusaka<br>data} --> D
 ```
 
 ## Contact 
