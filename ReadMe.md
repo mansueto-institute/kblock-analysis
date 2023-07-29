@@ -22,16 +22,16 @@
 ```mermaid
 graph LR
 G[DHS<br>data] --> C
-A{Block<br>complexity<br>data} --> B[complexity-analysis.R]
+A[Block<br>complexity<br>data] --> B[complexity-analysis.R]
 E[aggregation_func.R] --> B
 A --> C[dhs-analysis.R]
 
 F[graph_funcs.R] --> D[graph-viz.R]
 J[Lusaka<br>GeoJSON] --> D
 
-style A fill:#FF0000
-style G fill:#FF0000
-style J fill:#FF0000
+style A fill:#eba8d3
+style G fill:#eba8d3
+style J fill:#eba8d3
 ```
 
 ## Contact 
