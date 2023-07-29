@@ -21,15 +21,15 @@
 ### Workflow diagram:
 ```mermaid
 graph LR
-G[DHS data] --> C
-A[Block complexity data] --> B[complexity-analysis.R]
+G[DHS API] --> C
+A[africa_data.parquet] --> B[complexity-analysis.R]
 E[aggregation_func.R] --> B
 A --> C[dhs-analysis.R]
 B --> Z[Summary stats and<br>visualizations]
 C --> X[Statistical analysis and<br>visualizations]
 
 F[graph_funcs.R] --> D[graph-viz.R]
-J[Lusaka GeoJSON] --> D
+J[layer_lusaka.geojson] --> D
 D --> Y[Complexity graph<br>visualization]
 
 style A fill:#eba8d3
