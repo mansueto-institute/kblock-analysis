@@ -39,6 +39,9 @@ style J fill:#eba8d3
 style Z fill: #f7f5eb
 style X fill: #f7f5eb
 style Y fill: #f7f5eb
+
+style F fill: #ADD8E6
+style E fill: #ADD8E6
 ```
 
 ## Contact 
