@@ -31,6 +31,6 @@ F[graph_funcs.R] --> D[graph-viz.R]
 J[layer_lusaka.geojson] --> D
 ```
 
-## Author 
+## Contact 
 Nicholas Marchio, data scientist at the Mansueto Institute
 
