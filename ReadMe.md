@@ -33,7 +33,8 @@ F[graph_funcs.R] --> D[graph-viz.R]
 J[layer_lusaka.geojson] --> D
 D --> Y[Complexity graph<br>visualization]
 
-style A fill:#eba8d3, color:#333333
+style A fill:#eba8d3
+style A color:#333333
 style G fill:#eba8d3
 style J fill:#eba8d3
 
