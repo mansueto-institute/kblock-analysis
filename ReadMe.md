@@ -10,13 +10,13 @@
 
 ### Demographic and Health Survey (DHS) statistical analysis:
 
-* [dhs-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/dhs-analysis.R) downloads [DHS data](https://dhsprogram.com/) via an API connection, joins to the block level database (referenced above), and performs a statistical analysis that runs correlations, PCA, and regressions on the relationships between block complexity and social development indicators corresponding to human well-being and household characteristics. When running on your own computer please be sure to change directory paths hardcoded at the beginning of the file and add your own DHS login credentials.
+* [dhs-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/dhs-analysis.R) downloads [DHS data](https://dhsprogram.com/) via an API connection, joins to the block level database (referenced above), and performs a statistical analysis that runs correlations, PCA, and regressions on the relationships between block complexity and social development indicators corresponding to human well-being and household characteristics. When running on your own computer please be sure to change directory paths hardcoded at the beginning of the file and add your own DHS login credentials (this requires undergoing a dataset access approval process).
 
 ### Block complexity graph visualizations:
 
 * [graph-viz.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/graph-viz.R) visualizes block complexity in the format of a network graph.  When running on your own computer please be sure to change directory paths hardcoded at the beginning of the file.
-* [graph_funcs.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/graph_funcs.R) contains a function to generate a complexity graph.
-* [layer_lusaka.geojson](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/layer_lusaka.geojson) contains data for two community areas in Lusaka, Zambia. 
+* [graph_funcs.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/graph_funcs.R) contains functions to generate a complexity graph.
+* [layer_lusaka.geojson](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/layer_lusaka.geojson) contains data for a community area in Lusaka, Zambia. 
 
 ### Workflow diagram:
 ```mermaid
