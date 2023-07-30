@@ -27,8 +27,8 @@ E[aggregation_func.R] --> B
 A --> C[dhs-analysis.R]
 B --> Z[Summary stats and<br>visualizations]
 C --> X[Statistical analysis and<br>visualizations]
-Q[mansueto-institute/kblock.git] --> A
-Q[mansueto-institute/kblock.git] --> J
+Q[kblock.git] --> A
+Q[kblock.git] --> J
 
 F[graph_funcs.R] --> D[graph-viz.R]
 J[layer_lusaka.geojson] --> D
