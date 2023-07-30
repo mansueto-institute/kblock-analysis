@@ -4,7 +4,7 @@
 
 ### Block complexity aggregation and visualization:
 
-* [complexity-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/complexity-analysis.R) aggregates the block level spatial data and generates several visualizations used in the analysis. When running on your own computer please be sure to change directory paths hardcoded at the beginning of the file.
+* [complexity-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/complexity-analysis.R) aggregates the block level data and generates several visualizations used in the analysis. When running on your own computer please be sure to change directory paths hardcoded at the beginning of the file.
 * [aggregation_func.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/aggregation_func.R) is a function to facilitate aggregation from the the block level to higher geographic scales.
 * [millionneighborhoods.africa](https://www.millionneighborhoods.africa/download) is the online block-level database used in this analysis.
 
