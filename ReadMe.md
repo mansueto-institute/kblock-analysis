@@ -6,7 +6,7 @@
 
 * [complexity-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/complexity-analysis.R) aggregates the block level data and generates several visualizations used in the analysis. When running on your own computer please be sure to change directory paths hardcoded at the beginning of the file.
 * [aggregation_func.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/aggregation_func.R) is a function to facilitate aggregation from the the block level to higher geographic scales.
-* [millionneighborhoods.africa/download](https://www.millionneighborhoods.africa/download) is the online source for the block-level database used in this analysis.
+* [millionneighborhoods.africa/download](https://www.millionneighborhoods.africa/download) is the online source for the block-level database used in this analysis. To replicate the analysis be sure to download all block-level GIS data for sub-Saharan Africa, and remove the geometry column when aggregating the block level information.
 
 ### Demographic and Health Survey (DHS) statistical analysis:
 
