@@ -20,7 +20,6 @@ library(ggpmisc)
 library(kableExtra)
 library(xtable)
 
-# https://docs.ropensci.org/rdhs/articles/introduction.html
 # https://dhsprogram.com/pubs/pdf/DHSG1/Guide_to_DHS_Statistics_DHS-7_v2.pdf
 
 # Download block level data from this URL and add to input-data directory: dsbprylw7ncuq.cloudfront.net/AF/africa_data.parquet
@@ -34,6 +33,11 @@ dir.create('dhs-viz')
 wd_path = 'dhs'
 mnp_data_path = '/dhs-data/africa_data.parquet'
 mnp_gis_data_path = '/dhs-data/africa_geodata.parquet'
+
+# CHANGE TO DHS USER LOGIN CREDENTIAL
+# Follow instructions here: # https://docs.ropensci.org/rdhs/articles/introduction.html
+dhs_user_email = 'nmarchio@uchicago.edu'
+dhs_project_name = "Identifying neighborhoods and detecting service deficits in sub-Saharan Africa from complete buildings footprint data"
 
 # -------------------------------------------------------------------------
 load_saved = TRUE
@@ -64,8 +68,8 @@ sapply(subnat_all_wide, function(X) sum(is.na(X)))
 if (load_saved == FALSE) {
   
   # config <- get_rdhs_config()
-  set_rdhs_config(email = 'nmarchio@uchicago.edu', # CHANGE TO DHS USER LOGIN CREDENTIAL
-                  project = "Identifying neighborhoods and detecting service deficits in sub-Saharan Africa from complete buildings footprint data",
+  set_rdhs_config(email = dhs_user_email, 
+                  project = dhs_project_name,
                   cache_path = paste0(wd_path,'/dhs-data'),
                   timeout = 180)
   
