@@ -70,7 +70,7 @@ style Q fill: #b1d8b7
 
 
 ## Contact 
-Nicholas Marchio, data scientist at the Mansueto Institute
+Nicholas Marchio, data scientist at the Mansueto Institute. For any technical inquiries please feel free to create a Git issue and tag `nmarchio`. 
 
 For related technical work see the following repos:
 * [kblock](https://github.com/mansueto-institute/kblock): Python codebase for generating the underlying block complexity and population data available at [millionneighborhoods.africa](millionneighborhoods.africa).
