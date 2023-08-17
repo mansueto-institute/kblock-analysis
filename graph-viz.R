@@ -11,11 +11,15 @@ options(lifecycle_verbosity = "warning")
 
 # Read in functions -------------------------------------------------------
 
-source('/Users/nm/Desktop/Projects/work/mnp-analysis/r-scripts/graph_funcs.R')
+source('graph_funcs.R')
+
+# Creat output directory
+dir.create('output-data/viz')
+wd_output = 'output-data'
 
 # Import data -------------------------------------------------------------
 
-layers <- st_read('/Users/nm/Desktop/Projects/work/mnp-analysis/big-data.nosync/layers/layer_lusaka.geojson')
+layers <- st_read('data/layer_lusaka.geojson')
 
 graph_data <- layers %>% filter(block_id %in% c("ZMB.5.6_2_9371"))
 
@@ -79,7 +83,7 @@ alpha_param = .3
     plot_annotation(tag_levels = list(c("A","B"))) & 
     theme(plot.tag = element_text(size = 13)))
 
-wd_output = '/Users/nm/Desktop/Projects/work/mnp-analysis/deliverables'
+
 
 ggsave(plot = vizgl, filename = paste0(wd_output,'/viz/complexity-graph.pdf'),
        width = 12.3, height = 5)
