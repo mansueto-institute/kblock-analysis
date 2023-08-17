@@ -54,23 +54,19 @@ style Q fill: #b1d8b7
 * Platform: aarch64-apple-darwin20 (64-bit)
 * Running under: macOS 13.4.1
 
-| Package | Version | | Package | Version |
-|---|---|- |---|---|
-| tidyverse | 1.3.1 | | broom | 1.0.3 |
-| sf | 1.0-8 | | betareg | 3.1-4 |
-| units | 0.8-0 | | ggpmisc | 0.5.2 |
-| viridis | 0.6.2 | | kableExtra | 1.3.4 |
-| patchwork | 1.1.1 | | xtable | 1.8-4 |
-| scales | 1.2.1 | | ggplot2 | 3.4.1 |
-| rdhs | 0.7.5 | | tidygeocoder | 1.0.5 |
-| rmapshaper | 0.4.6 | | writexl | 1.4.0 |
-| arrow | 7.0.0 | | ggsn | 0.5.0 |
-| sfarrow | 0.4.1 | | geoarrow | 0.0.0.9000 |
-| readxl | 1.3.1 | | osmdata | 0.1.9 |
-| Hmisc | 4.8-0 | | scatterpie | 0.1.7 |
-| tidymodels | 0.2.0 | | ggrepel | 0.9.3 |
-| readr | 2.1.1 | | DescTools | 0.99.48 |
-| ggpubr | 0.6.0 | 
+| Package | Version | | Package | Version | | Package | Version |
+|---|---|- |---|---|- |---|---|
+| tidyverse | 1.3.1 | | broom | 1.0.3 | | readxl | 1.3.1 | 
+| sf | 1.0-8 | | betareg | 3.1-4 | | osmdata | 0.1.9 |
+| units | 0.8-0 | | ggpmisc | 0.5.2 | | Hmisc | 4.8-0 | 
+| viridis | 0.6.2 | | kableExtra | 1.3.4 | | scatterpie | 0.1.7 |
+| patchwork | 1.1.1 | | xtable | 1.8-4 | | tidymodels | 0.2.0 | 
+| scales | 1.2.1 | | ggplot2 | 3.4.1 | | ggrepel | 0.9.3 |
+| rdhs | 0.7.5 | | tidygeocoder | 1.0.5 | | readr | 2.1.1 | 
+| rmapshaper | 0.4.6 | | writexl | 1.4.0 | | DescTools | 0.99.48 |
+| arrow | 7.0.0 | | ggsn | 0.5.0 | | ggpubr | 0.6.0 | 
+| sfarrow | 0.4.1 | | geoarrow | 0.0.0.9000 | 
+
 
 ## Contact 
 Nicholas Marchio, data scientist at the Mansueto Institute
