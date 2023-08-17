@@ -50,9 +50,9 @@ style Q fill: #b1d8b7
 
 ## Details on R environment for replication
 
-R version 4.1.2 (2021-11-01)
-Platform: aarch64-apple-darwin20 (64-bit)
-Running under: macOS 13.4.1
+* R version 4.1.2 (2021-11-01)
+* Platform: aarch64-apple-darwin20 (64-bit)
+* Running under: macOS 13.4.1
 
 | Package | Version | | Package | Version |
 |---|---|- |---|---|
