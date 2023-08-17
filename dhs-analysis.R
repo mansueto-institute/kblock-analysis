@@ -23,9 +23,17 @@ library(xtable)
 # https://docs.ropensci.org/rdhs/articles/introduction.html
 # https://dhsprogram.com/pubs/pdf/DHSG1/Guide_to_DHS_Statistics_DHS-7_v2.pdf
 
-wd_path = '/Users/nm/Desktop/Projects/work/mnp-analysis/dhs'
-mnp_data_path = '/Users/nm/Desktop/Projects/work/mnp-analysis/big-data.nosync/run3/africa_data/africa_data.parquet'
-mnp_gis_data_path = '/Users/nm/Desktop/Projects/work/mnp-analysis/big-data.nosync/run3/africa_data/africa_geodata.parquet'
+# Download block level data from this URL and add to input-data directory: dsbprylw7ncuq.cloudfront.net/AF/africa_data.parquet
+# Download block level data w/geometries from this URL and add to input-data directory: dsbprylw7ncuq.cloudfront.net/AF/africa_geodata.parquet
+
+dir.create('dhs')
+dir.create('dhs-data')
+dir.create('dhs-analysis')
+dir.create('dhs-viz')
+
+wd_path = 'dhs'
+mnp_data_path = '/dhs-data/africa_data.parquet'
+mnp_gis_data_path = '/dhs-data/africa_geodata.parquet'
 
 # -------------------------------------------------------------------------
 load_saved = TRUE
@@ -50,15 +58,13 @@ sapply(subnat_all_wide, function(X) sum(is.na(X)))
 # Check if indicator exists in DHS and MIS
 # fulluni_indicators <- dhs_data(surveyIds = c('SN2020MIS','MR2020DHS'),
 #                              breakdown = "subnational")
-#write_csv(fulluni_indicators, '/Users/nm/Desktop/indicators-possible.csv')
-#currentuni_indicators <- read_csv(paste0(wd_path,'/dhs-data/dhs_download.csv'))
 
 # Load DHS Survey Data ---------------------------------------------------------
 
 if (load_saved == FALSE) {
   
   # config <- get_rdhs_config()
-  set_rdhs_config(email = 'nmarchio@uchicago.edu',
+  set_rdhs_config(email = 'nmarchio@uchicago.edu', # CHANGE TO DHS USER LOGIN CREDENTIAL
                   project = "Identifying neighborhoods and detecting service deficits in sub-Saharan Africa from complete buildings footprint data",
                   cache_path = paste0(wd_path,'/dhs-data'),
                   timeout = 180)
@@ -251,7 +257,6 @@ if (load_saved == FALSE) {
   # Aggregate MNP data to DHS regions using subnat_to_blocks crosswalk
 
   if (!file.exists(paste0(wd_path,'/dhs-data/k_data_subnational.csv'))) {
-    #k_data <- read_parquet('/Users/nm/Downloads/outputs/combine/subsahran_data.parquet') %>%
     k_data <- read_parquet(mnp_data_path) %>%
       mutate(region_core_urban = case_when(class_urban_hierarchy == "1 - Core urban" ~ landscan_population_un, TRUE ~ as.numeric(0)),
              region_peripheral_urban = case_when(class_urban_hierarchy == "2 - Peripheral urban" ~ landscan_population_un, TRUE ~ as.numeric(0)),
@@ -427,7 +432,6 @@ indicators_list_wide <- c('EM_OCCP_M_AGR', 'EM_OCCP_M_MNS', 'EM_OCCP_M_MNU', 'EM
 names(subnat_all_wide)
 names(subnat_all_wide_k)
 
-
 subnat_all_wide_k %>% st_drop_geometry() %>% 
   select(DHSREGEN, REGCODE, CountryName, DHS_CountryCode) %>% distinct() %>% nrow()
 
@@ -441,7 +445,6 @@ subnat_all_wide_k %>% st_drop_geometry() %>%
   select(SVYYEAR) %>% distinct()
 
 # 238 administrative regions across 22 countries and 40 unique surveys taking place between 2010 and 2021, producing 367 unique survey observations
-
 
 subnat_all_wide_k  <- subnat_all_wide_k %>% filter(!is.na(k_complexity)) %>%
   mutate(population_k_1_3 = population_k_1 + population_k_2 + population_k_3,
@@ -1128,8 +1131,8 @@ design3 <- "
 # subnat_clusters %>% select(ISO) %>% distinct()
 # "PCA on the following dimensions: percentage of de jure population with an improved sanitation facility; with an improved water source on the premises; with basic sanitation service; basic water service; earth/sand floors; with electricity; with limited sanitation service; with limited water service; with natural floors; with water on the premises; in each wealth quintile; living in households whose main source of drinking water is an improved source; mean number of persons per sleeping room; and percentage of households with 1 to 2, 3 to 4, 5 to 6, or 7 or more persons per sleeping room; percentage of women who are literate."
 
-#ggsave(plot = dhs_k_v_pca, filename = paste0(wd_path,'/dhs-viz.nosync/','fig4_scatter_k_PC1_4.pdf'), width = 14, height = 16)
-ggsave(plot = dhs_k_v_pca_grob, filename = paste0('/Users/nm/Desktop/Projects/work/mnp-analysis/deliverables/viz/scatter_k_PC1.pdf'), width = 16, height = 12)  
+       
+ggsave(plot = dhs_k_v_pca_grob, filename = paste0(wd_path,'/dhs-viz/scatter_k_PC1.pdf'), width = 16, height = 12)  
 
 
 # 4 x 3  ------------------------------------------------------------------
@@ -1295,7 +1298,7 @@ ggsave(plot = dhs_k_v_pca_grob, filename = paste0('/Users/nm/Desktop/Projects/wo
                                              left = text_grob(paste0('PC1 of PCA on DHS indicators'), rot = 90, vjust = 1, size = 15, face = "bold"), 
                                              bottom = text_grob("Block complexity", rot = 0, vjust = -9, size = 15, face = "bold") ) )
 
-ggsave(plot = dhs_k_v_pca_grob_4x3, filename = paste0('/Users/nm/Desktop/Projects/work/mnp-analysis/deliverables/viz/scatter_k_PC1_4x3.pdf'), width = 12.3, height = 16)  
+ggsave(plot = dhs_k_v_pca_grob_4x3, filename = paste0(wd_path,'/dhs-viz/scatter_k_PC1_4x3.pdf'), width = 12.3, height = 16)  
 
 
 # Map sub-national DHS data -----------------------------------------------
@@ -1354,7 +1357,7 @@ for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
          scale_fill_distiller(direction = -1, palette = 'Spectral',  labels = scales::percent )) +
       plot_annotation(title = paste0(title_country,' ',title_year,' | Health and Education')) & 
       map_theme
-    ggsave(plot = dhs_humandev, filename = paste0(wd_path,'/dhs-viz.nosync/',title_country,'-',title_year,'-','humandev.png'), width = 12, height = 6, dpi = 300)  
+    ggsave(plot = dhs_humandev, filename = paste0(wd_path,'/dhs-viz/',title_country,'-',title_year,'-','humandev.png'), width = 12, height = 6, dpi = 300)  
   }
   #dhs_humandev 
   
@@ -1394,7 +1397,7 @@ for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
       #plot_layout(guides = 'collect') &
       plot_annotation(title = paste0(title_country,' ',title_year,' | Household Characteristics')) & 
       map_theme #+ theme(legend.position = 'bottom')
-    ggsave(plot = dhs_infra, filename = paste0(wd_path,'/dhs-viz.nosync/',title_country,'-',title_year,'-','infra.png'), width = 12, height = 6, dpi = 400)  
+    ggsave(plot = dhs_infra, filename = paste0(wd_path,'dhs-viz/',title_country,'-',title_year,'-','infra.png'), width = 12, height = 6, dpi = 400)  
   }
   #dhs_infra
   
@@ -1433,7 +1436,7 @@ for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
          scale_fill_distiller(direction = -1, palette = 'Spectral',  labels = scales::percent ))  +
       plot_annotation(title = paste0(title_country,' ',title_year,' | Wealth')) & 
       map_theme
-    ggsave(plot = dhs_wealth, filename = paste0(wd_path,'/dhs-viz.nosync/',title_country,'-',title_year,'-','wealth.png'), width = 12, height = 6, dpi = 300)  
+    ggsave(plot = dhs_wealth, filename = paste0(wd_path,'/dhs-viz/',title_country,'-',title_year,'-','wealth.png'), width = 12, height = 6, dpi = 300)  
   }
   #dhs_wealth
   
@@ -1474,7 +1477,7 @@ for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
          scale_fill_distiller(limits = c(0,1), direction = -1, palette = 'Spectral',  labels = scales::percent )) +
       plot_annotation(title = paste0(title_country,' ',title_year,' | Block complexity')) & 
       map_theme
-    ggsave(plot = dhs_k, filename = paste0(wd_path,'/dhs-viz.nosync/',title_country,'-',title_year,'-','complexity.png'), width = 12, height = 6, dpi = 300)  
+    ggsave(plot = dhs_k, filename = paste0(wd_path,'/dhs-viz/',title_country,'-',title_year,'-','complexity.png'), width = 12, height = 6, dpi = 300)  
   }
   #dhs_k
 }
@@ -1514,7 +1517,7 @@ dhs_humandev <- (
   plot_annotation(title = paste0('sub-Saharan Africa | Health and Education')) & 
   map_theme
 dhs_humandev
-ggsave(plot = dhs_humandev, filename = paste0(wd_path,'/dhs-viz.nosync/','Africa-humandev.pdf'), width = 10, height = 8)  
+ggsave(plot = dhs_humandev, filename = paste0(wd_path,'/dhs-viz/','Africa-humandev.pdf'), width = 10, height = 8)  
 
 dhs_infra <- (
   ggplot() +
@@ -1545,7 +1548,7 @@ dhs_infra <- (
   plot_annotation(title = paste0('sub-Saharan Africa | Household Characteristics')) & 
   map_theme #+ theme(legend.position = 'bottom')
 dhs_infra
-ggsave(plot = dhs_infra, filename = paste0(wd_path,'/dhs-viz.nosync/','Africa-infra.pdf'), width = 10, height = 8)  
+ggsave(plot = dhs_infra, filename = paste0(wd_path,'/dhs-viz/','Africa-infra.pdf'), width = 10, height = 8)  
 
 dhs_wealth <- (
   ggplot() +
@@ -1575,7 +1578,7 @@ dhs_wealth <- (
   plot_annotation(title = paste0('sub-Saharan Africa | Wealth')) & 
   map_theme
 dhs_wealth
-ggsave(plot = dhs_wealth, filename = paste0(wd_path,'/dhs-viz.nosync/','Africa-wealth.pdf'), width = 10, height = 8)  
+ggsave(plot = dhs_wealth, filename = paste0(wd_path,'/dhs-viz/','Africa-wealth.pdf'), width = 10, height = 8)  
 
 dhs_k <- (
   ggplot() +
@@ -1605,300 +1608,7 @@ dhs_k <- (
   plot_annotation(title = paste0('sub-Saharan Africa | Block complexity')) & 
   map_theme
 dhs_k
-ggsave(plot = dhs_k, filename = paste0(wd_path,'/dhs-viz.nosync/','Africa-complexity.pdf'), width = 10, height = 8)  
-
-# Appendix  ---------------------------------------------------------------
-
-
-names(cor_dhs)
-
-cor_dhs
-data(mtcars)
-mtcars$cyl <- factor(mtcars$cyl, levels = c("4","6","8"),
-                     labels = c("four","six","eight"))
-tbl <- ftable(mtcars$cyl, mtcars$vs, mtcars$am, mtcars$gear,
-              row.vars = c(2, 4),
-              dnn = c("Cylinders", "V/S", "Transmission", "Gears"))
-
-?ftable
-z <- cor_dhs %>%
-  filter(category %in% c('Economic Wellbeing','Education and Literacy')) %>%
-  select_at(vars(c("category", "subcategory", "label", "estimate", "n","universe")))
-
-xtableFtable(z)
-
-?xtableFtable
-
-# Scatter 3 v1 ------------------------------------------------------------
-
-# ED_LITR_W_LIT  WS_SRCE_P_IOP WS_TLET_P_IMP HC_WIXQ_P_HGH
-
-# ED_LITR_W_LIT WS_SRCE_H_IOP WS_TLET_H_IMP HC_ELEC_H_ELC HC_FLRM_H_NAT HC_WIXQ_BOTTOM80  HC_WIXQ_P_HGH region_urban_share region_nonurban_share
-
-
- 
-design2 <- "
-  AABBCCJ
-  DDEEFFJ
-  GGHHIIJ
-"
-subnat_clusters
-# DHS PCA scatter
-(dhs_k_v_pca <- (
-  (ggplot() +
-     geom_point(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, color = ED_LITR_W_LIT, size = landscan_population_un_density_hectare ), alpha = .7) + 
-     scale_size_continuous(range = c(4,15), breaks = c(10, 40, 160), name = 'Population per hectare') +
-     scale_color_viridis(label = scales::percent, limits = c(0,1), name = 'Proportion') +
-     scale_x_continuous(expand = c(0,0), oob = scales::squish, limits = c(0.3, 1.477121), breaks = c(0.30103, 0.69897, 1, 1.30103, 1.477121), labels = c(2, 5, 10, 20, 30), name = 'Block complexity') +
-     labs(subtitle ='Percentage of women\nwho are literate', x = 'Block complexity', y = 'PC1') +
-     geom_text(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-     theme_minimal()) + 
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, color = WS_SRCE_H_IOP, size = landscan_population_un_density_hectare ), alpha = .7) + 
-       scale_size_continuous(range = c(4,15), breaks = c(10, 40, 160), name = 'Population per hectare') +
-       scale_color_viridis(label = scales::percent, limits = c(0,1), name = 'Proportion') +
-       scale_x_continuous(expand = c(0,0), oob = scales::squish, limits = c(0.3, 1.477121), breaks = c(0.30103, 0.69897, 1, 1.30103, 1.477121), labels = c(2, 5, 10, 20, 30), name = 'Block complexity') +
-       labs(subtitle ='Percentage of households with\nan improved water source on the premises', x = 'Block complexity', y = 'PC1') +
-       geom_text(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, color = WS_TLET_H_IMP, size = landscan_population_un_density_hectare ), alpha = .7) + 
-       scale_size_continuous(range = c(4,15), breaks = c(10, 40, 160), name = 'Population per hectare') +
-       scale_color_viridis(label = scales::percent, limits = c(0,1), name = 'Proportion') +
-       scale_x_continuous(expand = c(0,0), oob = scales::squish, limits = c(0.3, 1.477121), breaks = c(0.30103, 0.69897, 1, 1.30103, 1.477121), labels = c(2, 5, 10, 20, 30), name = 'Block complexity') +
-       labs(subtitle = 'Percentage of households with\nan improved sanitation facility', x = 'Block complexity', y = 'PC1') +
-       geom_text(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, color = HC_ELEC_H_ELC, size = landscan_population_un_density_hectare ), alpha = .7) + 
-       scale_size_continuous(range = c(4,15), breaks = c(10, 40, 160), name = 'Population per hectare') +
-       scale_color_viridis(label = scales::percent, limits = c(0,1), name = 'Proportion') +
-       scale_x_continuous(expand = c(0,0), oob = scales::squish, limits = c(0.3, 1.477121), breaks = c(0.30103, 0.69897, 1, 1.30103, 1.477121), labels = c(2, 5, 10, 20, 30), name = 'Block complexity') +
-       labs(subtitle =  'Percentage of households\nwith electricity', x = 'Block complexity', y = 'PC1') +
-       geom_text(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, color = HC_FLRM_H_NAT, size = landscan_population_un_density_hectare ), alpha = .7) + 
-       scale_size_continuous(range = c(4,15), breaks = c(10, 40, 160), name = 'Population per hectare') +
-       scale_color_viridis(label = scales::percent , limits = c(0,1), name = 'Proportion') +
-       scale_x_continuous(expand = c(0,0), oob = scales::squish, limits = c(0.3, 1.477121), breaks = c(0.30103, 0.69897, 1, 1.30103, 1.477121), labels = c(2, 5, 10, 20, 30), name = 'Block complexity') +
-       labs(subtitle =  "Percentage of households\nwith natural floors", x = 'Block complexity', y = 'PC1') +
-       geom_text(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() + 
-       geom_point(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, color = HC_WIXQ_BOTTOM80, size = landscan_population_un_density_hectare ), alpha = .7) + 
-       scale_size_continuous(range = c(4,15), breaks = c(10, 40, 160), name = 'Population per hectare') +
-       scale_color_viridis(label = scales::percent,limits = c(0,1), name = 'Proportion') +
-       scale_x_continuous(expand = c(0,0), oob = scales::squish, limits = c(0.3, 1.477121), breaks = c(0.30103, 0.69897, 1, 1.30103, 1.477121), labels = c(2, 5, 10, 20, 30), name = 'Block complexity') +
-       labs(subtitle =  "Percentage of de jure population\nin the bottom 80 percentile of wealth", x = 'Block complexity', y = 'PC1') +
-       geom_text(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, color = HC_WIXQ_P_HGH, size = landscan_population_un_density_hectare ), alpha = .7) + 
-       scale_size_continuous(range = c(4,15), breaks = c(10, 40, 160), name = 'Population per hectare') +
-       scale_color_viridis(label = scales::percent,limits = c(0,1), name = 'Proportion') +
-       scale_x_continuous(expand = c(0,0), oob = scales::squish, limits = c(0.3, 1.477121), breaks = c(0.30103, 0.69897, 1, 1.30103, 1.477121), labels = c(2, 5, 10, 20, 30), name = 'Block complexity') +
-       labs(subtitle = 'Percentage of de jure population\nin the top 20 percentile of wealth', x = 'Block complexity', y = 'PC1') +
-       geom_text(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1,  color = region_urban_share, size = landscan_population_un_density_hectare ), alpha = .7) + 
-       scale_size_continuous(range = c(4,15), breaks = c(10, 40, 160), name = 'Population per hectare') +
-       scale_color_viridis(label = scales::percent,limits = c(0,1), name = 'Proportion') +
-       scale_x_continuous(expand = c(0,0), oob = scales::squish, limits = c(0.3, 1.477121), breaks = c(0.30103, 0.69897, 1, 1.30103, 1.477121), labels = c(2, 5, 10, 20, 30), name = 'Block complexity') +
-       labs(subtitle =  'Urban share of population', x = 'Block complexity', y = 'PC1') +
-       geom_text(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() + 
-       geom_point(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1,  color = region_nonurban_share, size = landscan_population_un_density_hectare ), alpha = .7) + 
-       scale_size_continuous(range = c(4,15), breaks = c(10, 40, 160), name = 'Population per hectare') +
-       scale_color_viridis(label = scales::percent,limits = c(0,1), name = 'Proportion') +
-       scale_x_continuous(expand = c(0,0), oob = scales::squish, limits = c(0.3, 1.477121), breaks = c(0.30103, 0.69897, 1, 1.30103, 1.477121), labels = c(2, 5, 10, 20, 30), name = 'Block complexity') +
-       labs(subtitle =  "Non-urban share of population", x = 'Block complexity', y = 'PC1') +
-       geom_text(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() + ggplot2::annotate(geom = "table", x=0, y = 0, label = list(iso_table)) + theme_void())) + 
-    plot_layout(design = design2, guides = 'collect') + 
-    plot_annotation(caption = 'Principal Component 1 (PC1) represents 34 indicators from the Demographic and Health Surveys (DHS) Program that were collected in 224 regions across 22 countries between 2012 and 2021.\nBlock complexity is the population-weighted average of the block complexity index for all blocks within each region.') & theme(plot.subtitle = element_text(face = 'bold', hjust = .5),
-                                         #legend.title = element_blank(),
-                                         #text = element_text(size = 14),
-                                         plot.caption = element_text(hjust = 0, size = 10),
-                                         legend.title.align = 0.5,
-                                         legend.key.width = unit(1, 'cm'),
-                                         legend.position = 'bottom'
-                                         ))
-
-ggsave(plot = dhs_k_v_pca, filename = paste0(wd_path,'/dhs-viz.nosync/','scatter_k_PC1.pdf'), width = 18, height = 14)  
-
-(ggplot() +
-    geom_point(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, color = ED_LITR_W_LIT, size = landscan_population_un_density_hectare ), alpha = .7) + 
-    scale_size_continuous(range = c(4,15), breaks = c(10, 40, 160), name = 'Population per hectare') +
-    scale_color_viridis(label = scales::percent, limits = c(0,1), name = 'Percent of indicator') +
-    scale_x_continuous(expand = c(0,0), oob = scales::squish, limits = c(0.3, 1.477121), breaks = c(0.30103, 0.69897, 1, 1.30103, 1.477121), labels = c(2, 5, 10, 20, 30), name = 'Block complexity') +
-    labs(subtitle ='Percent of women\nwho are literate', x = 'Block complexity', y = 'PC1') +
-    geom_text(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-    theme_minimal())
-
-# DHS PCA scatter
-design3 <- "
-  AABBCCD
-  AABBCCD
-"
-(dhs_k_v_pca <- (
-  (ggplot() +
-     geom_point(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, color = ED_LITR_W_LIT, size = landscan_population_un_density_hectare ), alpha = .7) + 
-     scale_size_continuous(range = c(4,15), breaks = c(10, 40, 160), name = 'Population per hectare') +
-     scale_color_viridis(label = scales::percent, limits = c(0,1), name = 'Percent of indicator') +
-     scale_x_continuous(expand = c(0,0), oob = scales::squish, limits = c(0.3, 1.477121), breaks = c(0.30103, 0.69897, 1, 1.30103, 1.477121), labels = c(2, 5, 10, 20, 30), name = 'Block complexity') +
-     labs(subtitle ='Percent of women\nwho are literate', x = 'Block complexity', y = 'PC1') +
-     geom_text(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-     theme_minimal()) + 
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, color = WS_SRCE_H_IOP, size = landscan_population_un_density_hectare ), alpha = .7) + 
-       scale_size_continuous(range = c(4,15), breaks = c(10, 40, 160), name = 'Population per hectare') +
-       scale_color_viridis(label = scales::percent, limits = c(0,1), name = 'Percent of indicator') +
-       scale_x_continuous(expand = c(0,0), oob = scales::squish, limits = c(0.3, 1.477121), breaks = c(0.30103, 0.69897, 1, 1.30103, 1.477121), labels = c(2, 5, 10, 20, 30), name = 'Block complexity') +
-       labs(subtitle ='Percent of households with\nan improved water source on the premises', x = 'Block complexity', y = 'PC1') +
-       geom_text(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, color = HC_WIXQ_P_HGH, size = landscan_population_un_density_hectare ), alpha = .7) + 
-       scale_size_continuous(range = c(4,15), breaks = c(10, 40, 160), name = 'Population per hectare') +
-       scale_color_viridis(label = scales::percent,limits = c(0,1), name = 'Percent of indicator') +
-       scale_x_continuous(expand = c(0,0), oob = scales::squish, limits = c(0.3, 1.477121), breaks = c(0.30103, 0.69897, 1, 1.30103, 1.477121), labels = c(2, 5, 10, 20, 30), name = 'Block complexity') +
-       labs(subtitle = 'Percent of de jure population\nin the top 20 percentile of wealth', x = 'Block complexity', y = 'PC1') +
-       geom_text(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() + ggplot2::annotate(geom = "table", x=0, y = 0, label = list(iso_table)) + theme_void()) + 
-    plot_layout(design = design3, guides = 'collect', ncol = 4) + 
-    #plot_layout(guides = 'collect', ncol = 4) + 
-    plot_annotation(caption = 'Principal Component 1 (PC1) represents 34 indicators from the Demographic and Health Surveys (DHS) Program that were collected in 224 regions across 22 countries between 2012 and 2021.\nBlock complexity is the population-weighted average of the block complexity index for all blocks within each region.') & 
-    theme(plot.subtitle = element_text(face = 'bold', hjust = .5),
-          #legend.title = element_blank(),                                                                                                                                                                                                                                                                                                                                           
-          #legend.key.width = unit(1, 'cm'),
-          legend.key.height = unit(1, 'cm'),
-          legend.position = 'right')
-  ))
-
-ggsave(plot = dhs_k_v_pca, filename = paste0(wd_path,'/dhs-viz.nosync/','scatter_k_PC1_3.pdf'), width = 18, height = 6)  
-
-st_write(sdi %>% st_make_valid() %>% filter(city == '36001_freetown'), 
-         '/Users/nm/Desktop/SDI Slum Definitions/sierraleaone.geojson')
-
-rm(dhs_k_v_pca)
-rm(dhs_pca)
-rm(k_pca)
-
-
-# PC1 vs PC2 scatter ------------------------------------------------------
-
-pca <- as.data.frame(prcomp(subnat_pca %>% select(-one_of(sections,'landscan_population_un')), center = TRUE, scale. = TRUE)[["x"]]) #%>% select(PC1, PC2) 
-subnat_clusters <- merge(subnat_pca, pca, by = 0, all = TRUE) %>% select(-one_of(c('Row.names'))) %>%
-  mutate(#HC_WIXQ_BOTTOM60 = (HC_WIXQ_P_LOW + HC_WIXQ_P_2ND + HC_WIXQ_P_MID)/(HC_WIXQ_P_LOW + HC_WIXQ_P_2ND + HC_WIXQ_P_MID + HC_WIXQ_P_4TH+HC_WIXQ_P_HGH),
-    HC_WIXQ_BOTTOM80 = (HC_WIXQ_P_LOW + HC_WIXQ_P_2ND + HC_WIXQ_P_MID + HC_WIXQ_P_4TH)/(HC_WIXQ_P_LOW + HC_WIXQ_P_2ND + HC_WIXQ_P_MID + HC_WIXQ_P_4TH+HC_WIXQ_P_HGH))
-screeplot(prcomp(subnat_pca %>% select(-one_of(sections,'landscan_population_un')), center = TRUE, scale. = TRUE), npcs = 10, type = "lines")
-
-log_10 <- function(x) {
-  x = replace_na(na_if(na_if(na_if(log10(x), NaN), Inf), -Inf), 0)
-  x = ifelse(x < 1, 1, x)
-  return(x)
-}
-
-design <- "
-  1122337
-  4455667
-"
-
-# Complexity PCA scatter
-(k_pca <- (ggplot() +
-             geom_point(data = subnat_clusters, aes(x = PC1, y = PC2, color = k_complexity_average), alpha = .7, size = 4.5 ) + #  size = landscan_population_un
-             scale_color_viridis(oob = scales::squish, limits= c(1, 10), breaks= c(1, 5, 10), labels = c('1','5','10')) + 
-             labs(subtitle ='Block complexity' ) +
-             geom_text(data = subnat_clusters, aes(x = PC1, y = PC2, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-             theme_minimal()) + 
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = PC1, y = PC2, color = log_10(landscan_population_un_density_hectare)),  alpha = .7, size = 4.5) +
-       scale_color_viridis(oob = scales::squish, limits= c(1, 2), breaks= c(1, 1.30103, 1.69897, 2, 2.30103, 2.69897, 3, 4, 5, 6, 7), labels = c('10','20','50',"100",'200','500',"1K","10K","100K","1M","10M")) + 
-       labs(subtitle ='Population per hectare' ) +
-       geom_text(data = subnat_clusters, aes(x = PC1, y = PC2, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = PC1, y = PC2, color = building_to_block_area_ratio),  alpha = .7, size = 4.5) +
-       scale_color_viridis(label = scales::percent) +
-       labs(subtitle = 'Building to block area ratio') +
-       geom_text(data = subnat_clusters, aes(x = PC1, y = PC2, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = PC1, y = PC2, color = average_building_area_m2), alpha = .7, size = 4.5) +
-       scale_color_viridis(label = scales::comma) + 
-       labs(subtitle =  'Average building area (m2)') +
-       geom_text(data = subnat_clusters, aes(x = PC1, y = PC2, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = PC1, y = PC2, color = region_urban_share),  alpha = .7, size = 4.5) +
-       scale_color_viridis(label = scales::percent ) + 
-       labs(subtitle =  "Urban share of population") +
-       geom_text(data = subnat_clusters, aes(x = PC1, y = PC2, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() + 
-       geom_point(data = subnat_clusters, aes(x = PC1, y = PC2, color = region_nonurban_share), alpha = .7, size = 4.5) +
-       scale_color_viridis(label = scales::percent) + 
-       labs(subtitle =  "Non-urban share of population") +
-       geom_text(data = subnat_clusters, aes(x = PC1, y = PC2, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() + ggplot2::annotate(geom = "table", x = 0, y = 0, label = list(iso_table)) + theme_void()) + 
-    plot_layout(design = design) & theme(plot.subtitle = element_text(face = 'bold', hjust = .5),
-                                         legend.title = element_blank(),
-                                         legend.key.width = unit(1, 'cm'),
-                                         legend.position = 'bottom'))
-
-# DHS PCA scatter
-(dhs_pca <- (ggplot() +
-               geom_point(data = subnat_clusters, aes(x = PC1, y = PC2, color = ED_LITR_W_LIT), alpha = .7, size = 4.5) +
-               scale_color_viridis(label = scales::percent) +
-               labs(subtitle ='Percentage of women\nwho are literate' ) +
-               geom_text(data = subnat_clusters, aes(x = PC1, y = PC2, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-               theme_minimal()) + 
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = PC1, y = PC2, color = WS_SRCE_H_IOP),  alpha = .7, size = 4.5) +
-       scale_color_viridis(label = scales::percent) +
-       labs(subtitle ='Percentage of households with\nan improved water source on the premises' ) +
-       geom_text(data = subnat_clusters, aes(x = PC1, y = PC2, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = PC1, y = PC2, color = WS_TLET_H_IMP),  alpha = .7, size = 4.5) +
-       scale_color_viridis(label = scales::percent) +
-       labs(subtitle = 'Percentage of households with\nan improved sanitation facility') +
-       geom_text(data = subnat_clusters, aes(x = PC1, y = PC2, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = PC1, y = PC2, color = HC_ELEC_H_ELC), alpha = .7, size = 4.5) +
-       scale_color_viridis(label = scales::percent) + 
-       labs(subtitle =  'Percentage of households\nwith electricity') +
-       geom_text(data = subnat_clusters, aes(x = PC1, y = PC2, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() +
-       geom_point(data = subnat_clusters, aes(x = PC1, y = PC2, color = HC_FLRM_H_NAT),  alpha = .7, size = 4.5) +
-       scale_color_viridis(label = scales::percent ) + 
-       labs(subtitle =  "Percentage of households\nwith natural floors") +
-       geom_text(data = subnat_clusters, aes(x = PC1, y = PC2, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() + 
-       geom_point(data = subnat_clusters, aes(x = PC1, y = PC2, color = HC_WIXQ_BOTTOM80), alpha = .7, size = 4.5) +
-       scale_color_viridis(label = scales::percent) + 
-       labs(subtitle =  "Percentage of de jure population\nin the bottom 80 percentile of wealth") +
-       geom_text(data = subnat_clusters, aes(x = PC1, y = PC2, label = ISO), color = 'white', check_overlap = TRUE, fontface = 'bold', size = 2) +
-       theme_minimal()) +
-    (ggplot() + ggplot2::annotate(geom = "table", x=0, y = 0, label = list(iso_table)) + theme_void()) + 
-    plot_layout(design = design) & theme(plot.subtitle = element_text(face = 'bold', hjust = .5),
-                                         legend.title = element_blank(),
-                                         legend.key.width = unit(1, 'cm'),
-                                         legend.position = 'bottom'))
-
-ggsave(plot = dhs_pca, filename = paste0(wd_path,'/dhs-viz.nosync/','scatter_dhs_pca.pdf'), width = 12, height = 9)  
-ggsave(plot = k_pca, filename = paste0(wd_path,'/dhs-viz.nosync/','scatter_k_pca.pdf'), width = 18, height = 14)  
-
-
+ggsave(plot = dhs_k, filename = paste0(wd_path,'/dhs-viz/','Africa-complexity.pdf'), width = 10, height = 8)  
 
 # Citations ---------------------------------------------------------------
 # 
