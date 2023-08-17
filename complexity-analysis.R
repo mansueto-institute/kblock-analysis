@@ -24,16 +24,20 @@ options(scipen = 999)
 options(lifecycle_verbosity = "warning")
 
 # Load aggregation function
-source('/Users/nm/Desktop/Projects/work/mnp-analysis/r-scripts/aggregation_func.R')
+getwd()
+source('aggregation_func.R') # should be in the ~/kblock-analysis directory
 
 # Read in data ------------------------------------------------------------
-
-wd_input = '/Users/nm/Desktop/Projects/work/mnp-analysis/big-data.nosync/run3/africa_data'
-wd_output = '/Users/nm/Desktop/Projects/work/mnp-analysis/deliverables'
-
+dir.create('input-data')
+wd_input = 'input-data'
+# Download block level data from this URL: dsbprylw7ncuq.cloudfront.net/AF/africa_data.parquet
 df_combined <- read_parquet(paste0(wd_input,'/africa_data.parquet'))
 
-# add block count to aggregation process
+# Create output directories
+dir.create('output-data')
+dir.create('output-data/data')
+dir.create('output-data/viz')
+wd_output = 'output-data'
 
 # K-complexity groupings --------------------------------------------------
 
@@ -1123,7 +1127,7 @@ scatter_sd
   
 
 # -------------------------------------------------------------------------
-
+# Download from this URL: dsbprylw7ncuq.cloudfront.net/AF/africa_geodata.parquet
 area_data <- arrow::open_dataset(paste0(wd_input,'/africa_geodata.parquet')) %>% 
   filter(urban_id %in% c('ghsl_3798','periurban_925')) %>% 
   read_sf_dataset() %>%
