@@ -19,7 +19,7 @@ wd_output = 'output-data'
 
 # Import data -------------------------------------------------------------
 
-layers <- st_read('data/layer_lusaka.geojson')
+layers <- st_read('/data/layer_lusaka.geojson')
 
 graph_data <- layers %>% filter(block_id %in% c("ZMB.5.6_2_9371"))
 
