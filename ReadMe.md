@@ -22,14 +22,14 @@
 ```mermaid
 graph LR
 G[DHS API] --> C
-A[africa_data.parquet] --> B[complexity-analysis.R]
+A[africa_data.parquet] --> B[Step 1: complexity-analysis.R]
 E[aggregation_func.R] --> B
-A --> C[dhs-analysis.R]
+A --> C[Step 2: dhs-analysis.R]
 B --> Z[Summary stats and<br>visualizations]
 C --> X[Statistical analysis and<br>visualizations]
-Q[kblock.git] --> A
+Q[Step 0: kblock.git] --> A
 
-F[graph_funcs.R] --> D[graph-viz.R]
+F[graph_funcs.R] --> D[Step 3: graph-viz.R]
 J[layer_lusaka.geojson] --> D
 
 K[buildings_lusaka.geojson] --> B
