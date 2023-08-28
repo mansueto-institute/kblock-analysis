@@ -4,18 +4,18 @@
 
 ### Block complexity aggregation and visualization:
 
-* [complexity-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/complexity-analysis.R) aggregates the block level data and generates several visualizations used in the analysis. When running on your own computer please be sure to change directory paths hardcoded at the beginning of the file.
+* [complexity-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/complexity-analysis.R) aggregates the block level data and generates several visualizations used in the analysis. 
 * [aggregation_func.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/aggregation_func.R) is a function to facilitate aggregation from the the block level to higher geographic scales.
-* To replicate the analysis be sure to download the data referenced at this [line](https://github.com/mansueto-institute/kblock-analysis/blob/main/complexity-analysis.R#L33) and add to your local directory. [millionneighborhoods.africa](https://www.millionneighborhoods.africa/download) is the online source for the block-level database.
+* This script will automatically download several GB of block level data and add it to folders within the top level of the repo. The data is available at this website: [millionneighborhoods.africa](https://www.millionneighborhoods.africa/download).
 
 ### Demographic and Health Survey (DHS) statistical analysis:
 
-* [dhs-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/dhs-analysis.R) downloads [DHS data](https://dhsprogram.com/) via an API connection, joins to the block level database, and performs a statistical analysis that runs correlations, PCA, and regressions on the relationships between block complexity and social development indicators corresponding to human well-being and household characteristics.
-* When running on your own computer please be sure to confirm the directory paths are correct and add your own [DHS login credentials](https://github.com/mansueto-institute/kblock-analysis/blob/main/dhs-analysis.R#L39) to the script (this requires undergoing a dataset access approval process). Also be sure to download the data referenced at these [lines](https://github.com/mansueto-institute/kblock-analysis/blob/main/dhs-analysis.R#L25) and add to your local directory.
+* [dhs-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/dhs-analysis.R) downloads [DHS data](https://dhsprogram.com/) via an API connection, spatial joins to the block level database, and performs a statistical analysis that runs correlations, PCA, and regressions on the relationships between block complexity and social development indicators corresponding to human well-being and household characteristics.
+* This script must be run after the step in the complexity-analysis.R that downloads the block level database. When running on your own computer please be sure to register and add your own [DHS login credentials](https://github.com/mansueto-institute/kblock-analysis/blob/main/dhs-analysis.R#45) to the script (this requires undergoing a dataset access approval process). The pre-processing steps that involve API calls to the DHS website and spatial joins may take an hour of processing time.
 
 ### Block complexity graph visualizations:
 
-* [graph-viz.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/graph-viz.R) visualizes block complexity in the format of a network graph.  When running on your own computer please be sure to change directory paths hardcoded at the beginning of the file.
+* [graph-viz.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/graph-viz.R) visualizes block complexity in the format of a network graph. 
 * [graph_funcs.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/graph_funcs.R) contains functions to generate a complexity graph.
 * [layer_lusaka.geojson](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/layer_lusaka.geojson) contains data for a community area in Lusaka, Zambia. 
 
