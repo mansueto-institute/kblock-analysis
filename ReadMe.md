@@ -28,10 +28,14 @@ A --> C[dhs-analysis.R]
 B --> Z[Summary stats and<br>visualizations]
 C --> X[Statistical analysis and<br>visualizations]
 Q[kblock.git] --> A
-Q[kblock.git] --> J
 
 F[graph_funcs.R] --> D[graph-viz.R]
 J[layer_lusaka.geojson] --> D
+
+K[buildings_lusaka.geojson] --> B
+J[layer_lusaka.geojson] --> B
+L[streets_lusaka.geojson] --> B
+
 D --> Y[Complexity graph<br>visualization]
 
 style A fill:#eba8d3
