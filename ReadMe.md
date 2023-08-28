@@ -33,7 +33,6 @@ F[graph_funcs.R] --> D[graph-viz.R]
 J[layer_lusaka.geojson] --> D
 
 K[buildings_lusaka.geojson] --> B
-J[layer_lusaka.geojson] --> B
 L[streets_lusaka.geojson] --> B
 
 D --> Y[Complexity graph<br>visualization]
@@ -41,6 +40,8 @@ D --> Y[Complexity graph<br>visualization]
 style A fill:#eba8d3
 style G fill:#eba8d3
 style J fill:#eba8d3
+style K fill:#eba8d3
+style L fill:#eba8d3
 
 style Z fill: #f7f5eb
 style X fill: #f7f5eb
