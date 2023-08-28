@@ -5,8 +5,8 @@
 ### Block complexity aggregation and visualization:
 
 * [complexity-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/complexity-analysis.R) aggregates the block level data and generates several visualizations used in the analysis. The script uses [aggregation_func.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/aggregation_func.R) to facilitate aggregation from the the block level to higher geographic scales.
-* This script will automatically download several GB of block level data and add it to folders within the top level of the repo. The data is available at this website: [millionneighborhoods.africa](https://www.millionneighborhoods.africa/download). The script also uses these files to generate demonstration visuals: [data/un-habitat](https://github.com/mansueto-institute/kblock-analysis/tree/main/data/un-habitat), [data
-/buildings_lusaka.geojson](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/buildings_lusaka.geojson), [data/streets_lusaka.geojson](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/streets_lusaka.geojson), [data/layer_lusaka.geojson](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/layer_lusaka.geojson).
+* This script will automatically download several GB of block level data and add it to folders within the top level of the repo. The data is available at this website: [millionneighborhoods.africa](https://www.millionneighborhoods.africa/download). The script also uses the following files in this repo: [data/un-habitat](https://github.com/mansueto-institute/kblock-analysis/tree/main/data/un-habitat), [data
+/buildings_lusaka.geojson](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/buildings_lusaka.geojson), [data/streets_lusaka.geojson](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/streets_lusaka.geojson).
 
 ### Demographic and Health Survey (DHS) statistical analysis:
 
