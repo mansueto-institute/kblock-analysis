@@ -25,35 +25,42 @@ library(xtable)
 # Download block level data from this URL and add to input-data directory: dsbprylw7ncuq.cloudfront.net/AF/africa_data.parquet
 # Download block level data w/geometries from this URL and add to input-data directory: dsbprylw7ncuq.cloudfront.net/AF/africa_geodata.parquet
 
-dir.create('dhs')
-dir.create('dhs-data')
 dir.create('dhs-analysis')
-dir.create('dhs-viz')
+dir.create('dhs-analysis/data')
+dir.create('dhs-analysis/analysis')
+dir.create('dhs-analysis/viz')
+wd_path = 'dhs-analysis'
 
-wd_path = 'dhs'
-mnp_data_path = '/dhs-data/africa_data.parquet'
-mnp_gis_data_path = '/dhs-data/africa_geodata.parquet'
+# Make sure to download the block files (this is done in the complexity-analysis.R script)
+wd_input = 'complexity-analysis/input-data'
+if (!file.exists(paste0("complexity-analysis/input-data/africa_data.parquet"))) {
+  curl::multi_download("dsbprylw7ncuq.cloudfront.net/AF/africa_data.parquet", "complexity-analysis/input-data/africa_data.parquet", resume = TRUE)
+}
+if (!file.exists(paste0("complexity-analysis/input-data/africa_geodata.parquet"))) {
+  curl::multi_download("dsbprylw7ncuq.cloudfront.net/AF/africa_geodata.parquet", "complexity-analysis/input-data/africa_geodata.parquet", resume = TRUE)
+}
 
 # CHANGE TO DHS USER LOGIN CREDENTIAL
 # Follow instructions here: # https://docs.ropensci.org/rdhs/articles/introduction.html
 dhs_user_email = 'nmarchio@uchicago.edu'
 dhs_project_name = "Identifying neighborhoods and detecting service deficits in sub-Saharan Africa from complete buildings footprint data"
 
+
 # -------------------------------------------------------------------------
 load_saved = TRUE
 
 # UN cached
 if (load_saved == TRUE) {
-  un_slums_k <- read_csv(paste0(wd_path,'/dhs-data/un_slums_k.csv'))
-  un_services_cities_k <- read_csv(paste0(wd_path,'/dhs-data/un_services_cities_k.csv'))
-  urban_k <- read_csv(paste0(wd_path,'/dhs-data/aggregated_urban_k.csv'))
-  city_k <- read_csv(paste0(wd_path,'/dhs-data/aggregated_city_k.csv'))
+  un_slums_k <- read_csv(paste0(wd_path,'/data/un_slums_k.csv'))
+  un_services_cities_k <- read_csv(paste0(wd_path,'/data/un_services_cities_k.csv'))
+  urban_k <- read_csv(paste0(wd_path,'/data/aggregated_urban_k.csv'))
+  city_k <- read_csv(paste0(wd_path,'/data/aggregated_city_k.csv'))
 }
 
 # DHS cached
 if (load_saved == TRUE) {
-  subnat_all_wide <- st_read(paste0(wd_path,'/dhs-data/dhs_all_wide.geojson'))
-  k_data_subnat <- read_csv(paste0(wd_path,'/dhs-data/k_data_subnational.csv'))
+  subnat_all_wide <- st_read(paste0(wd_path,'/data/dhs_all_wide.geojson'))
+  k_data_subnat <- read_csv(paste0(wd_path,'/data/k_data_subnational.csv'))
 }
 
 names(subnat_all_wide)
@@ -70,7 +77,7 @@ if (load_saved == FALSE) {
   # config <- get_rdhs_config()
   set_rdhs_config(email = dhs_user_email, 
                   project = dhs_project_name,
-                  cache_path = paste0(wd_path,'/dhs-data'),
+                  cache_path = paste0(wd_path,'/data'),
                   timeout = 180)
   
   #Country list
@@ -120,7 +127,7 @@ if (load_saved == FALSE) {
   survey_list <- setdiff(survey_list, c("SL2016MIS","AO2011MIS")) # surveys without GIS information
   
   # Download DHS Survey Data
-  if (!file.exists(paste0(wd_path,'/dhs-data/dhs_download.csv'))) {
+  if (!file.exists(paste0(wd_path,'/data/dhs_download.csv'))) {
 
     # subnat_indicators <- dhs_data(surveyIds = survey_list,
     #                                 indicatorIds = dhs_indicator_list,
@@ -136,17 +143,17 @@ if (load_saved == FALSE) {
     subnat_indicators <- rbind(subnat_indicators_1, subnat_indicators_2)
     subnat_indicators %>% group_by(IndicatorId) %>% tally() %>% print(n=200)
     
-    write_csv(subnat_indicators, paste0(wd_path,'/dhs-data/dhs_download.csv'))
+    write_csv(subnat_indicators, paste0(wd_path,'/data/dhs_download.csv'))
     
     # all_indicators <- dhs_data(surveyIds = survey_list, 
     #                            indicatorIds = dhs_indicator_list,
     #                            breakdown = "all",
     #                            returnGeometry=TRUE,
     #                            f = 'geoJSON')
-    #write_csv(subnat_indicators, paste0(wd_path,'/dhs-data/dhs_download_micro.csv'))
+    #write_csv(subnat_indicators, paste0(wd_path,'/data/dhs_download_micro.csv'))
     
   } else {
-    subnat_indicators <- read_csv(paste0(wd_path,'/dhs-data/dhs_download.csv'))
+    subnat_indicators <- read_csv(paste0(wd_path,'/data/dhs_download.csv'))
   }
   
   # Pivot DHS data wide
@@ -174,7 +181,7 @@ if (load_saved == FALSE) {
   # }
   
   # Download DHS region boundaries
-  if (!file.exists(paste0(wd_path,'/dhs-data/dhs_geographies.geojson'))) {
+  if (!file.exists(paste0(wd_path,'/data/dhs_geographies.geojson'))) {
     # Download boundaries
     for (i in survey_list) {
       print(i)
@@ -190,17 +197,17 @@ if (load_saved == FALSE) {
         subnat_all <- geo 
       } 
     }
-    st_write(subnat_all, paste0(wd_path,'/dhs-data/dhs_geographies.geojson'), delete_dsn = TRUE)
+    st_write(subnat_all, paste0(wd_path,'/data/dhs_geographies.geojson'), delete_dsn = TRUE)
   } else {
-    subnat_all <- st_read(paste0(wd_path,'/dhs-data/dhs_geographies.geojson'))
+    subnat_all <- st_read(paste0(wd_path,'/data/dhs_geographies.geojson'))
   }
   
   # Throw an error if DHS geographies are missing for a survey in survey_list
   stopifnot(setequal(survey_list, subnat_all %>% st_drop_geometry() %>% select(SurveyId) %>% unique() %>% pull()))
   
   # Join DHS data and DHS region boundaries
-  if (!file.exists(paste0(wd_path,'/dhs-data/dhs_all_wide.geojson'))) {
-    # subnat_all_wide <- st_read(paste0(wd_path,'/dhs-data/dhs_all_wide.geojson'))
+  if (!file.exists(paste0(wd_path,'/data/dhs_all_wide.geojson'))) {
+    # subnat_all_wide <- st_read(paste0(wd_path,'/data/dhs_all_wide.geojson'))
     subnat_all_wide <- subnat_all %>%
       left_join(., subnat_wide, by = c('SurveyId'='SurveyId','REG_ID'='RegionId')) %>%
       filter(!is.na(DHS_CountryCode)) %>%
@@ -214,13 +221,13 @@ if (load_saved == FALSE) {
       #        ED_EDAT_B_SC	=	ED_EDAT_B_SSC	+ ED_EDAT_B_CSC)
     
     sapply(subnat_all_wide , function(X) sum(is.na(X)))
-    st_write(subnat_all_wide, paste0(wd_path,'/dhs-data/dhs_all_wide.geojson'), delete_dsn = TRUE)
+    st_write(subnat_all_wide, paste0(wd_path,'/data/dhs_all_wide.geojson'), delete_dsn = TRUE)
   } else {
-    subnat_all_wide <- st_read(paste0(wd_path,'/dhs-data/dhs_all_wide.geojson'))
+    subnat_all_wide <- st_read(paste0(wd_path,'/data/dhs_all_wide.geojson'))
   }
   
   # Construct DHS region to MNP block crosswalk
-  if (!file.exists(paste0(wd_path,'/dhs-data/blocks_to_dhs.parquet'))) {
+  if (!file.exists(paste0(wd_path,'/data/blocks_to_dhs.parquet'))) {
     sf_use_s2(FALSE) 
     subnat_to_blocks <- purrr::map_dfr(.x = unique(subnat_all_wide$SurveyId), .f = function(i) {
       print(i)
@@ -233,7 +240,7 @@ if (load_saved == FALSE) {
       #   st_make_valid() %>% mutate(is_valid = st_is_valid(geometry)) %>%
       #   filter(is_valid == TRUE) %>% select(-any_of('is_valid'))
       
-      iso_blocks <- arrow::open_dataset(mnp_gis_data_path) %>% 
+      iso_blocks <- arrow::open_dataset(paste0(wd_input,'/africa_geodata.parquet')) %>% 
         select(block_id, gadm_code, country_code, geometry) %>%
         filter(country_code %in% c(country_iso)) %>% 
         read_sf_dataset() %>%
@@ -251,17 +258,17 @@ if (load_saved == FALSE) {
       iso_blocks_xwalk <- rbind(iso_blocks_within %>% st_drop_geometry(),
                                 iso_blocks_intersect %>% st_drop_geometry())
     })
-    write_parquet(subnat_to_blocks, paste0(wd_path,'/dhs-data/blocks_to_dhs.parquet'))
-    #write_csv(subnat_to_blocks, paste0(wd_path,'/dhs-data/blocks_to_dhs.csv'))
+    write_parquet(subnat_to_blocks, paste0(wd_path,'/data/blocks_to_dhs.parquet'))
+    #write_csv(subnat_to_blocks, paste0(wd_path,'/data/blocks_to_dhs.csv'))
   } else {
-    subnat_to_blocks <- read_parquet(paste0(wd_path,'/dhs-data/blocks_to_dhs.parquet'))
-    #subnat_to_blocks <- read_csv(paste0(wd_path,'/dhs-data/blocks_to_dhs.csv'))
+    subnat_to_blocks <- read_parquet(paste0(wd_path,'/data/blocks_to_dhs.parquet'))
+    #subnat_to_blocks <- read_csv(paste0(wd_path,'/data/blocks_to_dhs.csv'))
   }
 
   # Aggregate MNP data to DHS regions using subnat_to_blocks crosswalk
 
-  if (!file.exists(paste0(wd_path,'/dhs-data/k_data_subnational.csv'))) {
-    k_data <- read_parquet(mnp_data_path) %>%
+  if (!file.exists(paste0(wd_path,'/data/k_data_subnational.csv'))) {
+    k_data <- read_parquet(paste0(wd_input,'/africa_data.parquet')) %>%
       mutate(region_core_urban = case_when(class_urban_hierarchy == "1 - Core urban" ~ landscan_population_un, TRUE ~ as.numeric(0)),
              region_peripheral_urban = case_when(class_urban_hierarchy == "2 - Peripheral urban" ~ landscan_population_un, TRUE ~ as.numeric(0)),
              region_peri_urban = case_when(class_urban_hierarchy== "3 - Peri-urban" ~ landscan_population_un, TRUE ~ as.numeric(0)),
@@ -288,19 +295,18 @@ if (load_saved == FALSE) {
       mutate(k_complexity_average = k_complexity_average/landscan_population_un)
     rm(k_data)
     gc()
-    write_csv(k_data_subnat, paste0(wd_path,'/dhs-data/k_data_subnational.csv')) 
+    write_csv(k_data_subnat, paste0(wd_path,'/data/k_data_subnational.csv')) 
   } else {
-    k_data_subnat <- read_csv(paste0(wd_path,'/dhs-data/k_data_subnational.csv'))
+    k_data_subnat <- read_csv(paste0(wd_path,'/data/k_data_subnational.csv'))
   } 
 }
 
 # Load UN Data Sources ---------------------------------------------------------
 
-
 if (load_saved == FALSE) {
 
   # Urban Population Living in Slums by Country or Area 2000-2020
-  un_slums <- read_csv(paste0(wd_path,'/un-habitat/urban_population_in_slums_2020.csv')) %>%
+  un_slums <- read_csv(paste0(wd_input,'/un-habitat/urban_population_in_slums_2020.csv')) %>%
     filter(!is.na(country_code)) %>%
     mutate(percent_2020_coalesced = coalesce(percent_2020, percent_2018, percent_2016, percent_2014),
            percent_2020_coalesced = percent_2020_coalesced/100) %>%
@@ -308,7 +314,7 @@ if (load_saved == FALSE) {
   
   # Population with Improved Water, Improved Sanitation and Other Urban Basic Services in Cities, Selected Countries (Percent)
   # https://data.unhabitat.org/pages/access-to-basic-services-in-cities-and-urban-areas
-  un_services_cities <- read_xlsx(path = paste0(wd_path,'/un-habitat/population_with_services_city.xlsx'), sheet = 'data')%>%
+  un_services_cities <- read_xlsx(path = paste0(wd_input,'/un-habitat/population_with_services_city.xlsx'), sheet = 'data')%>%
     select_all(~gsub("\\s+|\\.|\\/|,|\\*|-", "_", .)) %>%
     rename_all(list(tolower)) %>% filter(m49class %in% c('Sub-Saharan Africa','Western Asia and Northern Africa')) %>%
     group_by(country, city_region) %>%
@@ -363,7 +369,7 @@ if (load_saved == FALSE) {
     filter(match_code != '')
   
   agg_list <- c("k_complexity_average", "block_area_m2", "block_hectares", "block_area_km2", "block_perimeter_meters", "building_area_m2", "building_count", "parcel_count", "k_complexity", "landscan_population_un", "population_k_1", "population_k_2", "population_k_3", "population_k_4", "population_k_5", "population_k_6", "population_k_7", "population_k_8", "population_k_9", "population_k_10plus", "population_off_network", "bldg_area_count_bin_01_0.50__log10_3.2", "bldg_area_count_bin_02_0.75__log10_5.6", "bldg_area_count_bin_03_1.00__log10_10", "bldg_area_count_bin_04_1.25__log10_17.8", "bldg_area_count_bin_05_1.50__log10_31.6", "bldg_area_count_bin_06_1.75__log10_56.2", "bldg_area_count_bin_07_2.00__log10_100", "bldg_area_count_bin_08_2.25__log10_177.8", "bldg_area_count_bin_09_2.50__log10_316.2", "bldg_area_count_bin_10_2.75__log10_562.3", "bldg_area_count_bin_11_3.00__log10_1000", "bldg_area_count_bin_12_3.25__log10_1778.3", "bldg_area_count_bin_13_3.50__log10_3162.3", "bldg_area_count_bin_14_3.75__log10_5623.4", "bldg_area_count_bin_15_4.00__log10_10000", "bldg_area_m2_bin_01_0.50__log10_3.2", "bldg_area_m2_bin_02_0.75__log10_5.6", "bldg_area_m2_bin_03_1.00__log10_10", "bldg_area_m2_bin_04_1.25__log10_17.8", "bldg_area_m2_bin_05_1.50__log10_31.6", "bldg_area_m2_bin_06_1.75__log10_56.2", "bldg_area_m2_bin_07_2.00__log10_100", "bldg_area_m2_bin_08_2.25__log10_177.8", "bldg_area_m2_bin_09_2.50__log10_316.2", "bldg_area_m2_bin_10_2.75__log10_562.3", "bldg_area_m2_bin_11_3.00__log10_1000", "bldg_area_m2_bin_12_3.25__log10_1778.3", "bldg_area_m2_bin_13_3.50__log10_3162.3", "bldg_area_m2_bin_14_3.75__log10_5623.4", "bldg_area_m2_bin_15_4.00__log10_10000")
-  urban_k <- read_parquet(mnp_data_path) %>%
+  urban_k <- read_parquet(paste0(wd_input,'/africa_data.parquet')) %>%
     filter(class_urban_hierarchy %in% c("1 - Core urban", "2 - Peripheral urban", "3 - Peri-urban")) %>% 
     mutate(population_k_1 = case_when(k_labels == '1' ~ landscan_population_un, TRUE ~ as.numeric(0)),
            population_k_2 = case_when(k_labels == '2' ~ landscan_population_un, TRUE ~ as.numeric(0)),
@@ -385,7 +391,7 @@ if (load_saved == FALSE) {
   un_slums_k <- un_slums %>%
     left_join(., urban_k, by = c('country_code'='country_code'))
   
-  city_k <- read_parquet(mnp_data_path) %>%
+  city_k <- read_parquet(paste0(wd_input,'/africa_data.parquet')) %>%
     mutate(population_k_1 = case_when(k_labels == '1' ~ landscan_population_un, TRUE ~ as.numeric(0)),
            population_k_2 = case_when(k_labels == '2' ~ landscan_population_un, TRUE ~ as.numeric(0)),
            population_k_3 = case_when(k_labels == '3' ~ landscan_population_un, TRUE ~ as.numeric(0)),
@@ -414,11 +420,11 @@ if (load_saved == FALSE) {
     filter(#landscan_population_un >= 200000,
       year >= 2010)
   
-  write_csv(urban_k, paste0(wd_path,'/dhs-data/aggregated_urban_k.csv'))
-  write_csv(un_slums_k, paste0(wd_path,'/dhs-data/un_slums_k.csv'))
+  write_csv(urban_k, paste0(wd_path,'/data/aggregated_urban_k.csv'))
+  write_csv(un_slums_k, paste0(wd_path,'/data/un_slums_k.csv'))
   
-  write_csv(city_k, paste0(wd_path,'/dhs-data/aggregated_city_k.csv'))
-  write_csv(un_services_cities_k, paste0(wd_path,'/dhs-data/un_services_cities_k.csv'))
+  write_csv(city_k, paste0(wd_path,'/data/aggregated_city_k.csv'))
+  write_csv(un_services_cities_k, paste0(wd_path,'/data/un_services_cities_k.csv'))
 }
 
 # -------------------------------------------------------------------------
@@ -586,8 +592,8 @@ cor_un <- rbind(cor_unslums, cor_unhab_1, cor_unhab_2) %>%
 cor_un %>% select(column_label, estimate, p.value, n, universe, source) %>% as_tibble() %>% print(n = 100, width = 200)
 rm(cor_unslums, cor_unhab_1, cor_unhab_2)
 
-write_excel_csv(cor_un, paste0(wd_path,'/dhs-analysis/','correlations_table_un.csv'))
-write_excel_csv(cor_dhs, paste0(wd_path,'/dhs-analysis/','correlations_table_dhs.csv'))
+write_excel_csv(cor_un, paste0(wd_path,'/analysis/','correlations_table_un.csv'))
+write_excel_csv(cor_dhs, paste0(wd_path,'/analysis/','correlations_table_dhs.csv'))
 
 # Show the correlation with pop density, building metrics, (hypothesis is these will have a weaker relationship)
 # Look at the correlation -- scatter and annotate big outliers
@@ -793,8 +799,8 @@ combined_reg_output <- combined_reg_output %>%
                                      sign(estimate)==sign(dv_correl))) %>%
   relocate(distribution, predictors, dv_var, dv_label, dv_correl, term, estimate, estimate_log_odds, importance, p.value, expected_sign,  pseudo.r.squared)
 
-write_excel_csv(combined_pred_output, paste0(wd_path,'/dhs-analysis/','predictions_table.csv'))
-write_excel_csv(combined_reg_output , paste0(wd_path,'/dhs-analysis/','regression_table.csv'))
+write_excel_csv(combined_pred_output, paste0(wd_path,'/analysis/','predictions_table.csv'))
+write_excel_csv(combined_reg_output , paste0(wd_path,'/analysis/','regression_table.csv'))
 
 rm(reg_data_i, reg_output, pred_output)
 rm(binomial_controls, binomial_countries, binomial_single, binomial_model, 
@@ -969,7 +975,7 @@ reg_pca_output <- rbind(tidy(linear_reg_single, conf.int = TRUE) %>% mutate_if(i
                           cbind(., tidy(linear_reg_controls_imp, conf.int = TRUE) %>% mutate_if(is.numeric, round, 7) %>% select(estimate) %>% rename(importance = estimate))
                         )
 
-write_excel_csv(reg_pca_output, paste0(wd_path,'/dhs-analysis/','pc1_regression_table.csv'))
+write_excel_csv(reg_pca_output, paste0(wd_path,'/analysis/','pc1_regression_table.csv'))
 
 
 # DHS component vs block complexity ---------------------------------------
@@ -987,13 +993,13 @@ pca_loadings %>% as_tibble() %>% print(n = 100)
 # pearson correlation between component 1 and the inputs
 (pca_var_explained <- summary(pca_out)$importance %>% as.data.frame())
 
-# write_excel_csv(pca_var_explained, paste0(wd_path,'/dhs-analysis/','pca_var_explained_34DHS.csv'))
+# write_excel_csv(pca_var_explained, paste0(wd_path,'/analysis/','pca_var_explained_34DHS.csv'))
 
 writexl::write_xlsx(list('pca_regression' = reg_pca_output,
                          'pca_loadings' = pca_loadings, 
                          'pca_var_explained' = pca_var_explained), 
                     col_names = TRUE, format_headers = TRUE, 
-                    path = paste0(wd_path,'/dhs-analysis/','pca_var_analysis.xlsx'))
+                    path = paste0(wd_path,'/analysis/','pca_var_analysis.xlsx'))
 
 
 # Latex -------------------------------------------------------------------
@@ -1053,7 +1059,7 @@ for (i in unique(latex_table$category)) {
     }
 }
 
-write_csv(latex_code_df, paste0(wd_path,'/dhs-analysis/','latex_table.csv'))
+write_csv(latex_code_df, paste0(wd_path,'/analysis/','latex_table.csv'))
 
 
 
@@ -1136,7 +1142,7 @@ design3 <- "
 # "PCA on the following dimensions: percentage of de jure population with an improved sanitation facility; with an improved water source on the premises; with basic sanitation service; basic water service; earth/sand floors; with electricity; with limited sanitation service; with limited water service; with natural floors; with water on the premises; in each wealth quintile; living in households whose main source of drinking water is an improved source; mean number of persons per sleeping room; and percentage of households with 1 to 2, 3 to 4, 5 to 6, or 7 or more persons per sleeping room; percentage of women who are literate."
 
        
-ggsave(plot = dhs_k_v_pca_grob, filename = paste0(wd_path,'/dhs-viz/scatter_k_PC1.pdf'), width = 16, height = 12)  
+ggsave(plot = dhs_k_v_pca_grob, filename = paste0(wd_path,'/viz/scatter_k_PC1.pdf'), width = 16, height = 12)  
 
 
 # 4 x 3  ------------------------------------------------------------------
@@ -1302,7 +1308,7 @@ ggsave(plot = dhs_k_v_pca_grob, filename = paste0(wd_path,'/dhs-viz/scatter_k_PC
                                              left = text_grob(paste0('PC1 of PCA on DHS indicators'), rot = 90, vjust = 1, size = 15, face = "bold"), 
                                              bottom = text_grob("Block complexity", rot = 0, vjust = -9, size = 15, face = "bold") ) )
 
-ggsave(plot = dhs_k_v_pca_grob_4x3, filename = paste0(wd_path,'/dhs-viz/scatter_k_PC1_4x3.pdf'), width = 12.3, height = 16)  
+ggsave(plot = dhs_k_v_pca_grob_4x3, filename = paste0(wd_path,'/viz/scatter_k_PC1_4x3.pdf'), width = 12.3, height = 16)  
 
 
 # Map sub-national DHS data -----------------------------------------------
@@ -1318,6 +1324,8 @@ map_theme <- theme_bw() +
         plot.title = element_text(hjust = 0.5, face = 'bold', size = 14),
         axis.ticks = element_blank(),
         panel.grid.major = element_blank())
+
+dir.create(paste0(wd_path,'/viz/maps'))
 
 for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
   print(i)
@@ -1361,7 +1369,7 @@ for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
          scale_fill_distiller(direction = -1, palette = 'Spectral',  labels = scales::percent )) +
       plot_annotation(title = paste0(title_country,' ',title_year,' | Health and Education')) & 
       map_theme
-    ggsave(plot = dhs_humandev, filename = paste0(wd_path,'/dhs-viz/',title_country,'-',title_year,'-','humandev.png'), width = 12, height = 6, dpi = 300)  
+    ggsave(plot = dhs_humandev, filename = paste0(wd_path,'/viz/maps/',title_country,'-',title_year,'-','humandev.png'), width = 12, height = 6, dpi = 300)  
   }
   #dhs_humandev 
   
@@ -1401,7 +1409,7 @@ for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
       #plot_layout(guides = 'collect') &
       plot_annotation(title = paste0(title_country,' ',title_year,' | Household Characteristics')) & 
       map_theme #+ theme(legend.position = 'bottom')
-    ggsave(plot = dhs_infra, filename = paste0(wd_path,'dhs-viz/',title_country,'-',title_year,'-','infra.png'), width = 12, height = 6, dpi = 400)  
+    ggsave(plot = dhs_infra, filename = paste0(wd_path,'viz/maps/',title_country,'-',title_year,'-','infra.png'), width = 12, height = 6, dpi = 400)  
   }
   #dhs_infra
   
@@ -1440,7 +1448,7 @@ for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
          scale_fill_distiller(direction = -1, palette = 'Spectral',  labels = scales::percent ))  +
       plot_annotation(title = paste0(title_country,' ',title_year,' | Wealth')) & 
       map_theme
-    ggsave(plot = dhs_wealth, filename = paste0(wd_path,'/dhs-viz/',title_country,'-',title_year,'-','wealth.png'), width = 12, height = 6, dpi = 300)  
+    ggsave(plot = dhs_wealth, filename = paste0(wd_path,'/viz/maps/',title_country,'-',title_year,'-','wealth.png'), width = 12, height = 6, dpi = 300)  
   }
   #dhs_wealth
   
@@ -1481,7 +1489,7 @@ for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
          scale_fill_distiller(limits = c(0,1), direction = -1, palette = 'Spectral',  labels = scales::percent )) +
       plot_annotation(title = paste0(title_country,' ',title_year,' | Block complexity')) & 
       map_theme
-    ggsave(plot = dhs_k, filename = paste0(wd_path,'/dhs-viz/',title_country,'-',title_year,'-','complexity.png'), width = 12, height = 6, dpi = 300)  
+    ggsave(plot = dhs_k, filename = paste0(wd_path,'/viz/maps/',title_country,'-',title_year,'-','complexity.png'), width = 12, height = 6, dpi = 300)  
   }
   #dhs_k
 }
@@ -1521,7 +1529,7 @@ dhs_humandev <- (
   plot_annotation(title = paste0('sub-Saharan Africa | Health and Education')) & 
   map_theme
 dhs_humandev
-ggsave(plot = dhs_humandev, filename = paste0(wd_path,'/dhs-viz/','Africa-humandev.pdf'), width = 10, height = 8)  
+ggsave(plot = dhs_humandev, filename = paste0(wd_path,'/viz/maps/','africa-humandev.pdf'), width = 10, height = 8)  
 
 dhs_infra <- (
   ggplot() +
@@ -1552,7 +1560,7 @@ dhs_infra <- (
   plot_annotation(title = paste0('sub-Saharan Africa | Household Characteristics')) & 
   map_theme #+ theme(legend.position = 'bottom')
 dhs_infra
-ggsave(plot = dhs_infra, filename = paste0(wd_path,'/dhs-viz/','Africa-infra.pdf'), width = 10, height = 8)  
+ggsave(plot = dhs_infra, filename = paste0(wd_path,'/viz/maps/','africa-infra.pdf'), width = 10, height = 8)  
 
 dhs_wealth <- (
   ggplot() +
@@ -1582,7 +1590,7 @@ dhs_wealth <- (
   plot_annotation(title = paste0('sub-Saharan Africa | Wealth')) & 
   map_theme
 dhs_wealth
-ggsave(plot = dhs_wealth, filename = paste0(wd_path,'/dhs-viz/','Africa-wealth.pdf'), width = 10, height = 8)  
+ggsave(plot = dhs_wealth, filename = paste0(wd_path,'/viz/maps/','africa-wealth.pdf'), width = 10, height = 8)  
 
 dhs_k <- (
   ggplot() +
@@ -1612,7 +1620,7 @@ dhs_k <- (
   plot_annotation(title = paste0('sub-Saharan Africa | Block complexity')) & 
   map_theme
 dhs_k
-ggsave(plot = dhs_k, filename = paste0(wd_path,'/dhs-viz/','Africa-complexity.pdf'), width = 10, height = 8)  
+ggsave(plot = dhs_k, filename = paste0(wd_path,'/viz/maps/','africa-complexity.pdf'), width = 10, height = 8)  
 
 # Citations ---------------------------------------------------------------
 # 
@@ -1666,4 +1674,4 @@ ggsave(plot = dhs_k, filename = paste0(wd_path,'/dhs-viz/','Africa-complexity.pd
 #   mutate_at(vars(NumberOfMen, NumberOfWomen), as.numeric) %>%
 #   replace_na(., list(NumberOfMen = 0, NumberOfWomen = 0)) %>%
 #   mutate(SampleNumber = NumberOfMen + NumberOfWomen)
-# write_excel_csv(meta_surveys, paste0(wd_path,'/dhs-data/metadata/','metadata.csv'))
+# write_excel_csv(meta_surveys, paste0(wd_path,'/data/metadata/','metadata.csv'))
