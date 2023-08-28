@@ -11,7 +11,7 @@
 ### Demographic and Health Survey (DHS) statistical analysis:
 
 * [dhs-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/dhs-analysis.R) downloads [DHS data](https://dhsprogram.com/) via an API connection, spatial joins to the block level database, and performs a statistical analysis that runs correlations, PCA, and regressions on the relationships between block complexity and social development indicators corresponding to human well-being and household characteristics.
-* This script must be run after the step in the complexity-analysis.R that downloads the block level database. When running on your own computer please be sure to register and add your own [DHS login credentials](https://github.com/mansueto-institute/kblock-analysis/blob/main/dhs-analysis.R#45) to the script (this requires undergoing a dataset access approval process). The pre-processing steps that involve API calls to the DHS website and spatial joins may take an hour of processing time.
+* This script must be run after the step in the [complexity-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/complexity-analysis.R)  that downloads the block level database. When running on your own computer please be sure to register and add your own [DHS login credentials](https://github.com/mansueto-institute/kblock-analysis/blob/main/dhs-analysis.R#45) to the script (this requires undergoing a dataset access approval process). The pre-processing steps that involve API calls to the DHS website and spatial joins may take an hour of processing time.
 
 ### Block complexity graph visualizations:
 
