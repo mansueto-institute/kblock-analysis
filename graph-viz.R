@@ -14,12 +14,12 @@ options(lifecycle_verbosity = "warning")
 source('graph_funcs.R')
 
 # Creat output directory
-dir.create('output-data/viz')
-wd_output = 'output-data'
+dir.create('graph-viz')
+wd_output = 'graph-viz'
 
 # Import data -------------------------------------------------------------
 
-layers <- st_read('/data/layer_lusaka.geojson')
+layers <- st_read('data/layer_lusaka.geojson')
 
 graph_data <- layers %>% filter(block_id %in% c("ZMB.5.6_2_9371"))
 
@@ -83,18 +83,13 @@ alpha_param = .3
     plot_annotation(tag_levels = list(c("A","B"))) & 
     theme(plot.tag = element_text(size = 13)))
 
-
-
-ggsave(plot = vizgl, filename = paste0(wd_output,'/viz/complexity-graph.pdf'),
+ggsave(plot = vizgl, filename = paste0(wd_output,'/complexity-graph.pdf'),
        width = 12.3, height = 5)
 
-
-ggsave(plot = vizgraph, filename = paste0(wd_output,'/viz/complexity-graph_a.pdf'),
+ggsave(plot = vizgraph, filename = paste0(wd_output,'/complexity-graph_parta.pdf'),
        width = 6.15, height = 5)
 
-
-
-(vizdual <- vizgraph +
+(vizdual <- vizlattice +
     # ggplot() +
     # #geom_sf(data = poly_in, aes(fill = as.factor(k_complexity)), color = 'white', alpha = .8, linewidth = .2) +
     # geom_sf(data = poly_in, color = 'black', alpha = 0, size = .3, linewidth = .06) +
@@ -159,4 +154,5 @@ ggsave(plot = vizgraph, filename = paste0(wd_output,'/viz/complexity-graph_a.pdf
     scale_fill_manual( values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
     theme_void() + theme(legend.position = 'none') )
 
-
+ggsave(plot = vizdual, filename = paste0(wd_output,'/complexity-graph-progression.pdf'),
+       width = 15, height = 10)
