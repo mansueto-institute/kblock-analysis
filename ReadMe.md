@@ -6,12 +6,13 @@
 
 * [complexity-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/complexity-analysis.R) aggregates the block level data and generates several visualizations used in the analysis. The script uses [aggregation_func.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/aggregation_func.R) to facilitate aggregation from the the block level to higher geographic scales.
 * This script will automatically download several GB of block level data and add it to folders within the top level of the repo. The data is available at this website: [millionneighborhoods.africa](https://www.millionneighborhoods.africa/download). The script also uses the following files in this repo: [data
-/buildings_lusaka.geojson](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/buildings_lusaka.geojson), [data/streets_lusaka.geojson](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/streets_lusaka.geojson).
+/buildings_lusaka.geojson](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/buildings_lusaka.geojson), [data/streets_lusaka.geojson](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/streets_lusaka.geojson). Data sources and methods for generated the block level population and informality data is available in the [mansueto-institute/kblock](https://github.com/mansueto-institute/kblock) repo.
 
 ### Demographic and Health Survey (DHS) statistical analysis:
 
 * [dhs-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/dhs-analysis.R) downloads [DHS data](https://dhsprogram.com/) via an API connection, spatial joins to the block level database, and performs a statistical analysis that runs correlations, PCA, and regressions on the relationships between block complexity and social development indicators corresponding to human well-being and household characteristics.
 * This script must be run after the step in the [complexity-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/complexity-analysis.R)  that downloads the block level database. When running on your own computer please be sure to register and add your own [DHS login credentials](https://github.com/mansueto-institute/kblock-analysis/blob/main/dhs-analysis.R#45) to the script (this requires undergoing a dataset access approval process). The pre-processing steps that involve API calls to the DHS website and spatial joins may take an hour of processing time. This script also uses data downloaded from [data/un-habitat](https://github.com/mansueto-institute/kblock-analysis/tree/main/data/un-habitat).
+* DHS and UN data sources listed [here](https://github.com/mansueto-institute/kblock-analysis/blob/main/dhs-analysis.R#L1625).
 
 ### Block complexity graph visualizations:
 
