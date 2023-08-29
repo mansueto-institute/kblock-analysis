@@ -23,6 +23,11 @@
 graph LR
 G[DHS API] --> C
 A[africa_data.parquet] --> B[Step 1: complexity-analysis.R]
+M[africa_geodata.parquet] --> B
+M[africa_geodata.parquet] --> C
+
+Q[Step 0: kblock.git] --> M
+
 E[aggregation_func.R] --> B
 A --> C[Step 2: dhs-analysis.R]
 B --> Z[Summary stats and<br>visualizations]
