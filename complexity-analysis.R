@@ -20,7 +20,7 @@ library(viridis)
 library(scatterpie)
 library(ggrepel)
 library(DescTools)
-options(scipen = 999)
+options(scipen = 9999)
 options(lifecycle_verbosity = "warning")
 
 # Load aggregation function
@@ -29,18 +29,18 @@ getwd()
 source('aggregation_func.R') # should be in the ~/kblock-analysis directory
 
 # Read in data ------------------------------------------------------------
-dir.create('complexity-analysis')
-dir.create('complexity-analysis/input-data')
-wd_input = 'complexity-analysis/input-data'
 # Download block level data from this URL: dsbprylw7ncuq.cloudfront.net/AF/africa_data.parquet
-curl::multi_download("dsbprylw7ncuq.cloudfront.net/AF/africa_data.parquet", "complexity-analysis/input-data/africa_data.parquet", resume = TRUE)
-df_combined <- read_parquet(paste0(wd_input,'/africa_data.parquet'))
-
+if (!file.exists(paste0("data/africa_data.parquet"))) {
+  curl::multi_download("dsbprylw7ncuq.cloudfront.net/AF/africa_data.parquet", "complexity-analysis/input-data/africa_data.parquet", resume = TRUE) 
+  } else {
+  df_combined <- read_parquet(paste0('data/africa_data.parquet'))
+}
+  
 # Create output directories
-dir.create('complexity-analysis/output-data')
-dir.create('complexity-analysis/output-data/data')
-dir.create('complexity-analysis/output-data/viz')
-wd_output = 'complexity-analysis/output-data'
+dir.create('data/complexity-analysis')
+dir.create('data/complexity-analysis/data')
+dir.create('data/complexity-analysis/viz')
+wd_output = 'data/complexity-analysis'
 
 # K-complexity groupings --------------------------------------------------
 
@@ -954,7 +954,7 @@ rm(a, b, conurban_bars, conurban_bars_data)
 
 # Inequality charts -------------------------------------------------------
 
-urban_ineq <- read_parquet(paste0(wd_input,'/africa_data.parquet')) %>%
+urban_ineq <- read_parquet(paste0('data/africa_data.parquet')) %>%
   filter(area_type == 'Urban') 
 
 names(urban_ineq)
@@ -1039,9 +1039,13 @@ rm(conurban_sd, urban_sd, agglos_sd, scatter_gini, scatter_sd)
 
 # -------------------------------------------------------------------------
 # Download from this URL: dsbprylw7ncuq.cloudfront.net/AF/africa_geodata.parquet
-curl::multi_download("dsbprylw7ncuq.cloudfront.net/AF/africa_geodata.parquet", "complexity-analysis/input-data/africa_geodata.parquet", resume = TRUE)
+if (!file.exists(paste0("data/africa_geodata.parquet"))) {
+  curl::multi_download("dsbprylw7ncuq.cloudfront.net/AF/africa_geodata.parquet", "data/africa_geodata.parquet", resume = TRUE)
+} else {
+  print('africa_geodata.parquet already downloaded.')
+}
 
-area_data <- arrow::open_dataset(paste0(wd_input,'/africa_geodata.parquet')) %>% 
+area_data <- arrow::open_dataset(paste0('data/africa_geodata.parquet')) %>% 
   filter(urban_id %in% c('ghsl_3798','periurban_925')) %>% 
   read_sf_dataset() %>%
   st_set_crs(4326) %>%
@@ -1257,7 +1261,7 @@ ggsave(plot = layers_viz, filename = paste0(wd_output,'/viz/zoom_maps.pdf'),
 
 # Maps --------------------------------------------------------------------
 
-area_data <- arrow::open_dataset(paste0(wd_input,'/africa_geodata.parquet')) %>% 
+area_data <- arrow::open_dataset(paste0('data/africa_geodata.parquet')) %>% 
   filter(urban_id %in% c('ghsl_2125')) %>% 
   read_sf_dataset() %>%
   st_set_crs(4326) %>%
