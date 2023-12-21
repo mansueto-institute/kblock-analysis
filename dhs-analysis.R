@@ -19,49 +19,67 @@ library(betareg)
 library(ggpmisc)
 library(kableExtra)
 library(xtable)
+options(scipen = 9999)
+gc()
 
 # https://dhsprogram.com/pubs/pdf/DHSG1/Guide_to_DHS_Statistics_DHS-7_v2.pdf
 
-# Download block level data from this URL and add to input-data directory: dsbprylw7ncuq.cloudfront.net/AF/africa_data.parquet
-# Download block level data w/geometries from this URL and add to input-data directory: dsbprylw7ncuq.cloudfront.net/AF/africa_geodata.parquet
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+getwd()
 
-dir.create('dhs-analysis')
-dir.create('dhs-analysis/data')
-dir.create('dhs-analysis/analysis')
-dir.create('dhs-analysis/viz')
-wd_path = 'dhs-analysis'
+dir.create('data/dhs-analysis')
+dir.create('data/dhs-analysis')
+dir.create('data/dhs-analysis/data')
+dir.create('data/dhs-analysis/viz')
+wd_path = 'data/dhs-analysis'
 
-# Make sure to download the block files (this is done in the complexity-analysis.R script)
-wd_input = 'complexity-analysis/input-data'
-if (!file.exists(paste0("complexity-analysis/input-data/africa_data.parquet"))) {
-  curl::multi_download("dsbprylw7ncuq.cloudfront.net/AF/africa_data.parquet", "complexity-analysis/input-data/africa_data.parquet", resume = TRUE)
+load_saved = TRUE
+
+# Setup configuration -----------------------------------------------------
+
+# RData file
+if (load_saved == TRUE) {
+  load("data/dhs_data.RData")
+  # Requires authorization from DHS: https://uchicago.box.com/s/anw4fxc376dgtgol9tt87tuozipnk0kj
+  
+} else {
+  # Make sure to download the block files (this is done in the complexity-analysis.R script)
+  if (!file.exists(paste0("data/africa_data.parquet"))) {
+    curl::multi_download("dsbprylw7ncuq.cloudfront.net/AF/africa_data.parquet", "data/africa_data.parquet", resume = TRUE)
+  }
+  if (!file.exists(paste0("data/africa_geodata.parquet"))) {
+    curl::multi_download("dsbprylw7ncuq.cloudfront.net/AF/africa_geodata.parquet", "data/africa_geodata.parquet", resume = TRUE)
+  }
 }
-if (!file.exists(paste0("complexity-analysis/input-data/africa_geodata.parquet"))) {
-  curl::multi_download("dsbprylw7ncuq.cloudfront.net/AF/africa_geodata.parquet", "complexity-analysis/input-data/africa_geodata.parquet", resume = TRUE)
-}
+
+# Load staging files
+# Box.com link with access to staging files:
+# https://uchicago.box.com/s/anw4fxc376dgtgol9tt87tuozipnk0kj
+# subnat_indicators <- read_csv(paste0(wd_path,'/dhs_download.csv'))
+# subnat_all <- st_read(paste0(wd_path,'/dhs_geographies.geojson'))
+# subnat_all_wide <- st_read(paste0(wd_path,'/dhs_all_wide.geojson'))
+# subnat_to_blocks <- read_parquet(paste0(wd_path,'/blocks_to_dhs.parquet'))
 
 # CHANGE TO DHS USER LOGIN CREDENTIAL
 # Follow instructions here: # https://docs.ropensci.org/rdhs/articles/introduction.html
 dhs_user_email = 'nmarchio@uchicago.edu'
 dhs_project_name = "Identifying neighborhoods and detecting service deficits in sub-Saharan Africa from complete buildings footprint data"
 
-
 # -------------------------------------------------------------------------
-load_saved = TRUE
 
-# UN cached
-if (load_saved == TRUE) {
-  un_slums_k <- read_csv(paste0(wd_path,'/data/un_slums_k.csv'))
-  un_services_cities_k <- read_csv(paste0(wd_path,'/data/un_services_cities_k.csv'))
-  urban_k <- read_csv(paste0(wd_path,'/data/aggregated_urban_k.csv'))
-  city_k <- read_csv(paste0(wd_path,'/data/aggregated_city_k.csv'))
-}
-
-# DHS cached
-if (load_saved == TRUE) {
-  subnat_all_wide <- st_read(paste0(wd_path,'/data/dhs_all_wide.geojson'))
-  k_data_subnat <- read_csv(paste0(wd_path,'/data/k_data_subnational.csv'))
-}
+# # UN cached
+# if (load_saved == TRUE) {
+#   un_slums_k <- read_csv(paste0(wd_path,'/data/un_slums_k.csv'))
+#   un_services_cities_k <- read_csv(paste0(wd_path,'/data/un_services_cities_k.csv'))
+#   urban_k <- read_csv(paste0(wd_path,'/data/aggregated_urban_k.csv'))
+#   city_k <- read_csv(paste0(wd_path,'/data/aggregated_city_k.csv'))
+# }
+# 
+# # DHS cached
+# if (load_saved == TRUE) {
+#   subnat_all_wide <- st_read(paste0(wd_path,'/data/dhs_all_wide.geojson'))
+#   k_data_subnat <- read_csv(paste0(wd_path,'/data/k_data_subnational.csv'))
+# }
 
 names(subnat_all_wide)
 sapply(subnat_all_wide, function(X) sum(is.na(X)))
@@ -77,7 +95,7 @@ if (load_saved == FALSE) {
   # config <- get_rdhs_config()
   set_rdhs_config(email = dhs_user_email, 
                   project = dhs_project_name,
-                  cache_path = paste0(wd_path,'/data'),
+                  cache_path = paste0(wd_path),
                   timeout = 180)
   
   #Country list
@@ -236,7 +254,7 @@ if (load_saved == FALSE) {
         select(ISO3_CountryCode,DHS_CountryCode,SurveyId,SurveyYear,REGCODE,REG_ID,REGNAME,CNTRYNAMEE,DHSREGEN)
       country_iso <- subnat_surveyid %>% st_drop_geometry() %>% select(ISO3_CountryCode) %>% distinct() %>% pull()
       
-      # iso_blocks <- st_read_parquet(paste0('/Users/nm/Downloads/outputs/blocks/blocks_',country_iso,'.parquet')) %>% 
+      # iso_blocks <- st_read_parquet(paste0('/Users/nm/Downloads/blocks/blocks_',country_iso,'.parquet')) %>% 
       #   st_make_valid() %>% mutate(is_valid = st_is_valid(geometry)) %>%
       #   filter(is_valid == TRUE) %>% select(-any_of('is_valid'))
       
@@ -268,7 +286,7 @@ if (load_saved == FALSE) {
   # Aggregate MNP data to DHS regions using subnat_to_blocks crosswalk
 
   if (!file.exists(paste0(wd_path,'/data/k_data_subnational.csv'))) {
-    k_data <- read_parquet(paste0(wd_input,'/africa_data.parquet')) %>%
+    k_data <- read_parquet(paste0('data/africa_data.parquet')) %>%
       mutate(region_core_urban = case_when(class_urban_hierarchy == "1 - Core urban" ~ landscan_population_un, TRUE ~ as.numeric(0)),
              region_peripheral_urban = case_when(class_urban_hierarchy == "2 - Peripheral urban" ~ landscan_population_un, TRUE ~ as.numeric(0)),
              region_peri_urban = case_when(class_urban_hierarchy== "3 - Peri-urban" ~ landscan_population_un, TRUE ~ as.numeric(0)),
@@ -285,7 +303,10 @@ if (load_saved == FALSE) {
              population_k_10plus = case_when(k_labels == '10+' ~ landscan_population_un, TRUE ~ as.numeric(0)),
              population_off_network = case_when(k_labels == 'Off-network' ~ landscan_population_un, TRUE ~ as.numeric(0)))
     
-    agg_list <- c("region_core_urban", "region_peripheral_urban", "region_peri_urban", "region_non_urban", "k_complexity_average", "block_area_m2", "block_hectares", "block_area_km2", "block_perimeter_meters", "building_area_m2", "building_count", "parcel_count", "k_complexity", "landscan_population_un", "population_k_1", "population_k_2", "population_k_3", "population_k_4", "population_k_5", "population_k_6", "population_k_7", "population_k_8", "population_k_9", "population_k_10plus", "population_off_network", "bldg_area_count_bin_01_0.50__log10_3.2", "bldg_area_count_bin_02_0.75__log10_5.6", "bldg_area_count_bin_03_1.00__log10_10", "bldg_area_count_bin_04_1.25__log10_17.8", "bldg_area_count_bin_05_1.50__log10_31.6", "bldg_area_count_bin_06_1.75__log10_56.2", "bldg_area_count_bin_07_2.00__log10_100", "bldg_area_count_bin_08_2.25__log10_177.8", "bldg_area_count_bin_09_2.50__log10_316.2", "bldg_area_count_bin_10_2.75__log10_562.3", "bldg_area_count_bin_11_3.00__log10_1000", "bldg_area_count_bin_12_3.25__log10_1778.3", "bldg_area_count_bin_13_3.50__log10_3162.3", "bldg_area_count_bin_14_3.75__log10_5623.4", "bldg_area_count_bin_15_4.00__log10_10000", "bldg_area_m2_bin_01_0.50__log10_3.2", "bldg_area_m2_bin_02_0.75__log10_5.6", "bldg_area_m2_bin_03_1.00__log10_10", "bldg_area_m2_bin_04_1.25__log10_17.8", "bldg_area_m2_bin_05_1.50__log10_31.6", "bldg_area_m2_bin_06_1.75__log10_56.2", "bldg_area_m2_bin_07_2.00__log10_100", "bldg_area_m2_bin_08_2.25__log10_177.8", "bldg_area_m2_bin_09_2.50__log10_316.2", "bldg_area_m2_bin_10_2.75__log10_562.3", "bldg_area_m2_bin_11_3.00__log10_1000", "bldg_area_m2_bin_12_3.25__log10_1778.3", "bldg_area_m2_bin_13_3.50__log10_3162.3", "bldg_area_m2_bin_14_3.75__log10_5623.4", "bldg_area_m2_bin_15_4.00__log10_10000")
+    agg_list <- c("region_core_urban", "region_peripheral_urban", "region_peri_urban", "region_non_urban", "k_complexity_average", "block_area_m2", "block_hectares", "block_area_km2", "block_perimeter_meters", "building_area_m2", "building_count", "parcel_count", "k_complexity", "landscan_population_un", 
+                  "population_k_1", "population_k_2", "population_k_3", "population_k_4", "population_k_5", "population_k_6", "population_k_7", "population_k_8", "population_k_9", "population_k_10plus", "population_off_network", 
+                  "bldg_area_count_bin_01_0.50__log10_3.2", "bldg_area_count_bin_02_0.75__log10_5.6", "bldg_area_count_bin_03_1.00__log10_10", "bldg_area_count_bin_04_1.25__log10_17.8", "bldg_area_count_bin_05_1.50__log10_31.6", "bldg_area_count_bin_06_1.75__log10_56.2", "bldg_area_count_bin_07_2.00__log10_100", "bldg_area_count_bin_08_2.25__log10_177.8", "bldg_area_count_bin_09_2.50__log10_316.2", "bldg_area_count_bin_10_2.75__log10_562.3", "bldg_area_count_bin_11_3.00__log10_1000", "bldg_area_count_bin_12_3.25__log10_1778.3", "bldg_area_count_bin_13_3.50__log10_3162.3", "bldg_area_count_bin_14_3.75__log10_5623.4", "bldg_area_count_bin_15_4.00__log10_10000", "bldg_area_m2_bin_01_0.50__log10_3.2", "bldg_area_m2_bin_02_0.75__log10_5.6", "bldg_area_m2_bin_03_1.00__log10_10", "bldg_area_m2_bin_04_1.25__log10_17.8", "bldg_area_m2_bin_05_1.50__log10_31.6", "bldg_area_m2_bin_06_1.75__log10_56.2", "bldg_area_m2_bin_07_2.00__log10_100", "bldg_area_m2_bin_08_2.25__log10_177.8", "bldg_area_m2_bin_09_2.50__log10_316.2", "bldg_area_m2_bin_10_2.75__log10_562.3", "bldg_area_m2_bin_11_3.00__log10_1000", "bldg_area_m2_bin_12_3.25__log10_1778.3", "bldg_area_m2_bin_13_3.50__log10_3162.3", "bldg_area_m2_bin_14_3.75__log10_5623.4", "bldg_area_m2_bin_15_4.00__log10_10000")
+    
     k_data_subnat <- subnat_to_blocks %>%
       left_join(., k_data, by = c('block_id'='block_id'))  %>%
       mutate(k_complexity_average = k_complexity*landscan_population_un) %>%
@@ -306,7 +327,7 @@ if (load_saved == FALSE) {
 if (load_saved == FALSE) {
 
   # Urban Population Living in Slums by Country or Area 2000-2020
-  un_slums <- read_csv(paste0(wd_input,'/un-habitat/urban_population_in_slums_2020.csv')) %>%
+  un_slums <- read_csv(paste0('data/un-habitat/urban_population_in_slums_2020.csv')) %>%
     filter(!is.na(country_code)) %>%
     mutate(percent_2020_coalesced = coalesce(percent_2020, percent_2018, percent_2016, percent_2014),
            percent_2020_coalesced = percent_2020_coalesced/100) %>%
@@ -314,7 +335,7 @@ if (load_saved == FALSE) {
   
   # Population with Improved Water, Improved Sanitation and Other Urban Basic Services in Cities, Selected Countries (Percent)
   # https://data.unhabitat.org/pages/access-to-basic-services-in-cities-and-urban-areas
-  un_services_cities <- read_xlsx(path = paste0(wd_input,'/un-habitat/population_with_services_city.xlsx'), sheet = 'data')%>%
+  un_services_cities <- read_xlsx(path = paste0('data/un-habitat/population_with_services_city.xlsx'), sheet = 'data')%>%
     select_all(~gsub("\\s+|\\.|\\/|,|\\*|-", "_", .)) %>%
     rename_all(list(tolower)) %>% filter(m49class %in% c('Sub-Saharan Africa','Western Asia and Northern Africa')) %>%
     group_by(country, city_region) %>%
@@ -384,7 +405,7 @@ if (load_saved == FALSE) {
            population_off_network = case_when(k_labels == 'Off-network' ~ landscan_population_un, TRUE ~ as.numeric(0))) %>%             
     mutate(k_complexity_average = k_complexity*landscan_population_un) %>%
     group_by(country_code) %>%
-    summarize_at(vars(agg_list), list(sum)) %>% # , na.rm = TRUE
+    summarize_at(vars(all_of(agg_list)), list(sum)) %>% # , na.rm = TRUE
     ungroup() %>%
     mutate(k_complexity_average = k_complexity_average/landscan_population_un) 
   
@@ -409,7 +430,6 @@ if (load_saved == FALSE) {
     ungroup() %>%
     mutate(k_complexity_average = k_complexity_average/landscan_population_un) 
   
-
   un_services_cities_k <- city_k %>%
     inner_join(., un_services_cities, 
                by = c('urban_id'='match_code')) %>%
@@ -439,8 +459,6 @@ subnat_all_wide_k <- subnat_all_wide %>%
 # indicators_list_wide <- c('FP_NADM_W_UNT', 'FP_NADM_W_MNT', 'CM_ECMR_C_NNR', 'CM_ECMR_C_PNR', 'CM_ECMR_C_IMR', 'CM_ECMR_C_CMR', 'CM_ECMR_C_U5M', 'RH_DELP_C_DHF', 'CH_VACC_C_DP1', 'CH_VACC_C_DP2', 'CH_VACC_C_BAS', 'CH_VACC_C_AP2', 'CH_ARIS_C_ADV', 'CH_DIAR_C_DIA', 'CN_NUTS_C_HA3', 'CN_NUTS_C_HA2', 'CN_NUTS_C_WH3', 'CN_NUTS_C_WH2', 'CN_NUTS_C_WA3', 'CN_NUTS_C_WA2', 'CN_IYCF_C_4FA', 'CN_IYCF_C_MNA', 'CN_ANMC_C_ANY', 'ML_NETP_H_ITN', 'ML_NETP_H_IT2', 'ML_ITNA_P_ACC', 'ML_NETU_P_IT1', 'ML_NETC_C_IT1', 'ML_NETW_W_IT1', 'CO_MOBB_W_MOB', 'ED_EDAT_W_NED', 'ED_EDAT_W_SPR', 'ED_EDAT_W_CPR', 'ED_EDAT_W_SSC', 'ED_EDAT_W_CSC', 'ED_EDAT_W_HGH', 'ED_EDAT_W_PRI', 'ED_EDAT_W_SEC', 'ED_EDAT_W_MYR', 'ED_EDAT_M_PRI', 'ED_EDAT_M_SEC', 'ED_EDAT_M_MYR', 'ED_EDAT_B_NED', 'ED_EDAT_B_SPR', 'ED_EDAT_B_CPR', 'ED_EDAT_B_SSC', 'ED_EDAT_B_CSC', 'ED_EDAT_B_HGH', 'ED_EDAT_B_PRI', 'ED_EDAT_B_SEC', 'ED_EDAT_B_MYR', 'ED_NARP_W_FEM', 'ED_NARP_M_MAL', 'ED_NARP_B_BTH', 'ED_NARP_B_GPI', 'ED_GARP_B_GPI', 'ED_NARS_W_FEM', 'ED_NARS_M_MAL', 'ED_NARS_B_BTH', 'ED_NARS_B_GPI', 'ED_GARS_B_GPI', 'ED_EDUC_W_PRI', 'ED_EDUC_W_SEH', 'ED_EDUC_W_MYR', 'ED_EDUC_M_PRI', 'ED_EDUC_M_SEH', 'ED_EDUC_M_MYR', 'ED_LITR_W_LIT', 'ED_LITR_M_LIT', 'ED_LITY_W_SCH', 'ED_LITY_W_RDW', 'ED_LITY_W_RDP', 'ED_LITY_W_NRD', 'ED_LITY_W_NCD', 'ED_LITY_W_BLD', 'ED_LITY_W_LIT', 'ED_LITY_M_LIT', 'ED_MDIA_W_NWS', 'ED_MDIA_W_TLV', 'ED_MDIA_W_RDO', 'ED_MDIA_W_3MD', 'ED_MDIA_W_N3M', 'EM_EMPL_W_EMC', 'EM_EMPL_M_EMC', 'AN_NUTS_W_SHT', 'AN_NUTS_W_THN', 'AN_ANEM_W_ANY', 'EM_EMPL_W_ENC', 'EM_EMPL_M_ENC', 'CO_MOBB_W_BNK', 'EM_OCCP_W_PRO', 'EM_OCCP_W_CLR', 'EM_OCCP_W_SAL', 'EM_OCCP_W_MNS', 'EM_OCCP_W_MNU', 'EM_OCCP_W_DOM', 'EM_OCCP_W_AGR', 'EM_OCCP_W_OTH', 'EM_OCCP_W_TOT', 'EM_OCCP_M_PRO', 'EM_OCCP_M_CLR', 'EM_OCCP_M_SAL', 'EM_OCCP_M_MNS', 'EM_OCCP_M_MNU', 'EM_OCCP_M_AGR', 'EM_OCCP_M_OTH', 'WS_SRCE_H_IMP', 'WS_SRCE_H_PIP', 'WS_SRCE_H_NIM', 'WS_SRCE_H_IOP', 'WS_SRCE_H_BAS', 'WS_SRCE_H_LTD', 'WS_SRCE_P_IMP', 'WS_SRCE_P_PIP', 'WS_SRCE_P_NIM', 'WS_SRCE_P_IOP', 'WS_SRCE_P_BAS', 'WS_SRCE_P_LTD', 'WS_TIME_H_ONP', 'WS_TIME_H_L30', 'WS_TIME_H_M30', 'WS_TIME_P_ONP', 'WS_TIME_P_L30', 'WS_TIME_P_M30', 'WS_WTRT_H_APP', 'WS_WTRT_P_APP', 'WS_TLET_H_IMP', 'WS_TLET_H_NFC', 'WS_TLET_H_BAS', 'WS_TLET_H_LTD', 'WS_TLET_P_IMP', 'WS_TLET_P_NFC', 'WS_TLET_P_BAS', 'WS_TLET_P_LTD', 'WS_HNDW_H_OBS', 'WS_HNDW_H_SOP', 'WS_HNDW_H_BAS', 'WS_HNDW_H_LTD', 'WS_HNDW_P_OBS', 'WS_HNDW_P_SOP', 'WS_HNDW_P_BAS', 'WS_HNDW_P_LTD', 'HC_ELEC_H_ELC', 'HC_ELEC_H_NEL', 'HC_ELEC_P_ELC', 'HC_ELEC_P_NEL', 'HC_FLRM_H_NAT', 'HC_FLRM_H_ETH', 'HC_FLRM_P_NAT', 'HC_FLRM_P_ETH', 'HC_CKPL_H_HSE', 'HC_CKPL_P_HSE', 'HC_CKFL_H_SLD', 'HC_CKFL_H_CLN', 'HC_CKFL_P_SLD', 'HC_CKFL_P_CLN', 'HC_PPRM_H_12P', 'HC_PPRM_H_34P', 'HC_PPRM_H_56P', 'HC_PPRM_H_7PP', 'HC_PPRM_H_MNP', 'HC_HEFF_H_RDO', 'HC_HEFF_H_TLV', 'HC_HEFF_H_MPH', 'HC_HEFF_H_NPH', 'HC_HEFF_H_CMP', 'HC_HEFF_H_FRG', 'HC_TRNS_H_BIK', 'HC_TRNS_H_SCT', 'HC_TRNS_H_CAR', 'HC_WIXQ_P_LOW', 'HC_WIXQ_P_2ND', 'HC_WIXQ_P_MID', 'HC_WIXQ_P_4TH', 'HC_WIXQ_P_HGH', 'HC_WIXQ_P_GNI', 'HC_OLDR_H_3GN', 'EM_OCCP_M_DOM', 'WS_TLOC_H_DWL', 'WS_TLOC_P_DWL')
 indicators_list_wide <- c('EM_OCCP_M_AGR', 'EM_OCCP_M_MNS', 'EM_OCCP_M_MNU', 'EM_OCCP_M_PRO', 'EM_OCCP_W_AGR', 'EM_OCCP_W_DOM', 'EM_OCCP_W_MNU', 'EM_OCCP_W_PRO', 'HC_WIXQ_P_LOW', 'HC_WIXQ_P_2ND', 'HC_WIXQ_P_MID', 'HC_WIXQ_P_4TH', 'HC_WIXQ_P_HGH', 'HC_WIXQ_P_GNI', 'HC_HEFF_H_CMP', 'HC_HEFF_H_FRG', 'HC_HEFF_H_MPH', 'HC_HEFF_H_TLV', 'HC_TRNS_H_CAR', 'ED_EDAT_B_MYR', 'ED_EDAT_M_MYR', 'ED_EDAT_W_MYR', 'ED_EDAT_B_NED', 'ED_EDAT_B_SEC', 'ED_EDAT_B_HGH', 'ED_NARP_B_BTH', 'ED_NARS_B_BTH', 'ED_GARS_B_GPI', 'ED_LITR_W_LIT', 'ED_LITY_W_LIT', 'ED_LITY_W_NRD', 'ED_NARP_W_FEM', 'ED_NARS_W_FEM', 'ED_EDUC_W_SEH', 'ED_EDAT_W_NED', 'ED_EDAT_W_SEC', 'ED_EDAT_W_HGH', 'ED_MDIA_W_3MD', 'ED_MDIA_W_N3M', 'CO_MOBB_W_BNK', 'CO_MOBB_W_MOB', 'AN_NUTS_W_THN', 'FP_NADM_W_MNT', 'RH_DELP_C_DHF', 'CM_ECMR_C_CMR', 'CM_ECMR_C_IMR', 'CM_ECMR_C_PNR', 'CM_ECMR_C_U5M', 'CH_VACC_C_BAS', 'CN_IYCF_C_4FA', 'CN_NUTS_C_HA2', 'CN_NUTS_C_WA2', 'CN_NUTS_C_WH2', 'CN_ANMC_C_ANY', 'WS_HNDW_P_BAS', 'WS_HNDW_P_SOP', 'WS_TLOC_P_DWL', 'WS_TLET_P_BAS', 'WS_TLET_P_IMP', 'WS_TLET_P_NFC', 'WS_SRCE_P_BAS', 'WS_SRCE_P_IMP', 'WS_SRCE_P_IOP', 'WS_SRCE_P_LTD', 'WS_SRCE_P_NIM', 'WS_SRCE_P_PIP', 'WS_TIME_P_L30', 'WS_TIME_P_M30', 'WS_TIME_P_ONP', 'HC_PPRM_H_MNP', 'HC_OLDR_H_3GN', 'HC_PPRM_H_12P', 'HC_PPRM_H_34P', 'HC_PPRM_H_56P', 'HC_PPRM_H_7PP', 'HC_CKPL_P_HSE', 'HC_CKFL_P_CLN', 'HC_CKFL_P_SLD', 'HC_ELEC_P_ELC', 'HC_ELEC_P_NEL', 'HC_FLRM_P_ETH', 'HC_FLRM_P_NAT', 'WS_HNDW_H_BAS', 'WS_HNDW_H_SOP', 'WS_TLOC_H_DWL', 'WS_TLET_H_BAS', 'WS_TLET_H_IMP', 'WS_TLET_H_NFC', 'WS_SRCE_H_BAS', 'WS_SRCE_H_IMP', 'WS_SRCE_H_IOP', 'WS_SRCE_H_LTD', 'WS_SRCE_H_NIM', 'WS_SRCE_H_PIP', 'WS_TIME_H_L30', 'WS_TIME_H_M30', 'WS_TIME_H_ONP', 'HC_CKPL_H_HSE', 'HC_CKFL_H_CLN', 'HC_CKFL_H_SLD', 'HC_ELEC_H_ELC', 'HC_ELEC_H_NEL', 'HC_FLRM_H_ETH', 'HC_FLRM_H_NAT')
 
-names(subnat_all_wide)
-names(subnat_all_wide_k)
 
 subnat_all_wide_k %>% st_drop_geometry() %>% 
   select(DHSREGEN, REGCODE, CountryName, DHS_CountryCode) %>% distinct() %>% nrow()
@@ -485,9 +503,17 @@ dhs_dict_df <- dhs_indicators() %>%
   filter(!is.na(order)) %>%
   arrange(order)
 
-names(dhs_dict_df)
 
 # Correlations table ------------------------------------------------------
+
+streets_dhs_regions <- read_csv('data/streets_dhs_regions.csv') %>%
+  mutate(vehicular_highway_km = highway_length_meters*0.001,
+        region_area_km2  = region_area_m2*1e-6, 
+        street_density_ratio_km_to_km2 = vehicular_highway_km/region_area_km2)
+
+subnat_all_wide_k <- subnat_all_wide_k %>%
+  left_join(., streets_dhs_regions %>% select(REG_ID, street_density_ratio_km_to_km2), 
+            by = c('REG_ID'='REG_ID'))
 
 # DHS subnational data vs population weighted K
 (cor_dhs <- rcorr(subnat_all_wide_k %>% st_drop_geometry() %>%
@@ -501,6 +527,33 @@ names(dhs_dict_df)
    arrange(order) %>%
    mutate(universe = 'Regions', source = 'DHS') %>% as.data.frame() %>%
    rename(column_label = definition))
+
+(cor_dhs_2 <- rcorr(subnat_all_wide_k %>% st_drop_geometry() %>%
+                    select_at(c('street_density_ratio_km_to_km2', indicators_list_wide)) %>%
+                    relocate(all_of(c('street_density_ratio_km_to_km2', indicators_list_wide))) %>% as.matrix(),
+                  type=c('spearman')) %>% tidy() %>% filter(column2 == 'street_density_ratio_km_to_km2') %>%
+    inner_join(., dhs_dict_df, by = c('column1' = 'indicatorid')) %>%
+    select(column1, estimate, n, p.value) %>%
+    rename(column_var = column1,
+           estimate_street_density = estimate, 
+           n_street_density = n, 
+           p.value_street_density = p.value))
+
+(cor_dhs_log <- rcorr(subnat_all_wide_k %>% st_drop_geometry() %>%
+                        select_at(c('k_complexity_average', indicators_list_wide)) %>%
+                        relocate(all_of(c('k_complexity_average', indicators_list_wide))) %>% 
+                        mutate_all(log) %>% 
+                        mutate_all(function(x) ifelse(is.infinite(x), 0, x)) %>%
+                        mutate_all(function(x) ifelse(is.na(x), 0, x)) %>%
+                        mutate_all(function(x) ifelse(is.nan(x), 0, x)) %>%
+                        as.matrix(),
+                    type=c('spearman')) %>% tidy() %>% filter(column2 == 'k_complexity_average') %>%
+    inner_join(., dhs_dict_df, by = c('column1' = 'indicatorid')) %>%
+    select(column1, estimate, n, p.value) %>%
+    rename(column_var = column1,
+           log_v_log_k_complexity = estimate, 
+           n_log_v_log_k_complexity = n, 
+           p.value_log_v_log_k_complexity = p.value))
 
 (cor_dhs_urban <- rcorr(subnat_all_wide_k %>% st_drop_geometry() %>%
                     filter(region_non_urban_share < .5) %>%
@@ -516,12 +569,56 @@ names(dhs_dict_df)
          n_urban = n, 
          p.value_urban = p.value))
 
+(cor_dhs_urban_2 <- rcorr(subnat_all_wide_k %>% st_drop_geometry() %>%
+                          filter(region_non_urban_share < .5) %>%
+                          select_at(c('street_density_ratio_km_to_km2', indicators_list_wide)) %>%
+                          relocate(all_of(c('street_density_ratio_km_to_km2', indicators_list_wide))) %>% as.matrix(),
+                        type=c('spearman')) %>% tidy() %>% filter(column2 == 'street_density_ratio_km_to_km2') %>%
+    inner_join(., dhs_dict_df, by = c('column1' = 'indicatorid')) %>%
+    rename(column_var = column1) %>% 
+    as.data.frame() %>% 
+    select(column_var, estimate, n, p.value) %>%
+    rename(estimate_urban_street_density = estimate,
+           n_urban_street_density = n, 
+           p.value_urban_street_density = p.value))
+
 (cor_dhs <- cor_dhs %>%
     left_join(., cor_dhs_urban, by = c('column_var' = 'column_var')) %>%
+    left_join(., cor_dhs_2, by = c('column_var' = 'column_var')) %>%
+    left_join(., cor_dhs_urban_2, by = c('column_var' = 'column_var')) %>%
+    left_join(., cor_dhs_log, by = c('column_var' = 'column_var')) %>%
     relocate(column_var, category, subcategory, column_label, label, estimate, n, p.value, estimate_urban, n_urban, p.value_urban))
 
 (cor_dhs_trim <- cor_dhs %>%
   filter(household_duplicate == 0))
+
+cor_dhs_trim <- cor_dhs_trim %>%
+  mutate(larger_coefficient = case_when(abs(estimate_street_density) > abs(estimate) ~ 'Street density', TRUE ~ as.character('k-complexity')),
+         larger_coefficient_urban = case_when(abs(estimate_urban_street_density) > abs(estimate_urban) ~ 'Street density', TRUE ~ as.character('k-complexity')),
+         larger_coefficient_k_complexity = case_when(abs(estimate_street_density) < abs(estimate) ~ 1, TRUE ~ 0),
+         larger_coefficient_k_complexity_urban = case_when(abs(estimate_urban_street_density) < abs(estimate_urban) ~ 1, TRUE ~ 0),
+         larger_coefficient_street_density = case_when(abs(estimate_street_density) > abs(estimate) ~ 1, TRUE ~ 0),
+         larger_coefficient_street_density_urban = case_when(abs(estimate_urban_street_density) > abs(estimate_urban) ~ 1, TRUE ~ 0),
+         not_significant_street_density  = case_when( p.value_street_density > .01 ~ 1, TRUE ~ 0),
+         not_significant_k_complexity = case_when(p.value > .01 ~ 1, TRUE ~ 0),
+         not_significant_street_density_urban  = case_when( p.value_urban_street_density > .01 ~ 1, TRUE ~ 0),
+         not_significant_k_complexity_urban = case_when(p.value_urban > .01 ~ 1, TRUE ~ 0),
+         indicator_count = 1)
+
+
+(insig_street_density <- cor_dhs_trim %>% filter(not_significant_street_density == 1) %>%
+  filter(p.value_street_density >= .05) %>%
+  select(subcategory, label, estimate_street_density, n_street_density, p.value_street_density))
+
+
+(cor_summary_streets_v_k <- cor_dhs_trim %>% summarize_at(vars(indicator_count, 
+                                   larger_coefficient_k_complexity, larger_coefficient_street_density,
+                                   not_significant_street_density, not_significant_k_complexity, 
+                                   larger_coefficient_k_complexity_urban, larger_coefficient_street_density_urban, 
+                                   not_significant_street_density_urban, not_significant_k_complexity_urban), list(sum)) %>%
+  pivot_longer(cols = everything()) %>%
+  mutate(share = value / nrow(cor_dhs_trim)))
+
 
 #cor_dhs %>% select(label, estimate, n, p.value, level1, level2, column_var) %>% as_tibble() %>% print(n = 200)
 # write_csv(cor_dhs %>% as_tibble(),
@@ -592,8 +689,8 @@ cor_un <- rbind(cor_unslums, cor_unhab_1, cor_unhab_2) %>%
 cor_un %>% select(column_label, estimate, p.value, n, universe, source) %>% as_tibble() %>% print(n = 100, width = 200)
 rm(cor_unslums, cor_unhab_1, cor_unhab_2)
 
-write_excel_csv(cor_un, paste0(wd_path,'/analysis/','correlations_table_un.csv'))
-write_excel_csv(cor_dhs, paste0(wd_path,'/analysis/','correlations_table_dhs.csv'))
+write_excel_csv(cor_un, paste0(wd_path,'/data/','correlations_table_un.csv'))
+write_excel_csv(cor_dhs, paste0(wd_path,'/data/','correlations_table_dhs.csv'))
 
 # Show the correlation with pop density, building metrics, (hypothesis is these will have a weaker relationship)
 # Look at the correlation -- scatter and annotate big outliers
@@ -613,10 +710,12 @@ write_excel_csv(cor_dhs, paste0(wd_path,'/analysis/','correlations_table_dhs.csv
 #   type=c('spearman')) %>% 
 #   tidy() %>% filter(column2 == 'k_complexity_average')
 
+
 sections <- c("SurveyYear", "SurveyId", "REG_ID" ,"DHSREGEN", "CNTRYNAMEE")
 # specifications <- c('k_complexity_average', 'region_nonurban_share', 'landscan_population_un_density_hectare', 'building_to_block_area_ratio', 'average_building_area_m2')
-#specifications <- c('k_complexity_average', 'building_to_block_area_ratio', 'average_building_area_m2', 'block_area_m2', 'average_pop_per_building')
-specifications <- c('k_complexity_average', 'region_urban_share', 'share_building_count_under_31m2', 'building_to_block_area_ratio', 'landscan_population_un_density_hectare') # , 'average_pop_per_building' 
+# specifications <- c('k_complexity_average', 'building_to_block_area_ratio', 'average_building_area_m2', 'block_area_m2', 'average_pop_per_building')
+
+specifications <- c('k_complexity_average', 'street_density_ratio_km_to_km2', 'region_urban_share', 'share_building_count_under_31m2', 'building_to_block_area_ratio', 'landscan_population_un_density_hectare') # , 'average_pop_per_building' 
 # average buildings size, pod density, 
 reg_data <- subnat_all_wide_k %>% st_drop_geometry() %>%
   mutate(landscan_population_un_density_hectare = replace_na(landscan_population_un/block_hectares,0),
@@ -648,6 +747,7 @@ cor_list <- cor_dhs %>%
 
 if (exists("combined_reg_output")) {rm(combined_reg_output)}
 if (exists("combined_pred_output")) {rm(combined_pred_output)}
+
 
 for (i in seq_along(unique(cor_list$column_var))) {
 #for (i in seq_along(c('ED_LITR_W_LIT', 'WS_TLET_H_IMP', 'WS_SRCE_H_IOP', 'HC_WIXQ_P_HGH'))) {
@@ -799,8 +899,8 @@ combined_reg_output <- combined_reg_output %>%
                                      sign(estimate)==sign(dv_correl))) %>%
   relocate(distribution, predictors, dv_var, dv_label, dv_correl, term, estimate, estimate_log_odds, importance, p.value, expected_sign,  pseudo.r.squared)
 
-write_excel_csv(combined_pred_output, paste0(wd_path,'/analysis/','predictions_table.csv'))
-write_excel_csv(combined_reg_output , paste0(wd_path,'/analysis/','regression_table.csv'))
+write_excel_csv(combined_pred_output, paste0(wd_path,'/data/','predictions_table.csv'))
+write_excel_csv(combined_reg_output , paste0(wd_path,'/data/','regression_table.csv'))
 
 rm(reg_data_i, reg_output, pred_output)
 rm(binomial_controls, binomial_countries, binomial_single, binomial_model, 
@@ -835,7 +935,7 @@ pred_summary <- combined_pred_output %>%
 # PCA Prep ----------------------------------------------------------------
 
 sections <- c("SurveyYear", "SurveyId", "REG_ID", "REGCODE", "DHSREGEN", "CNTRYNAMEE", "ISO")
-complexity_features <- c('k_complexity_average', "landscan_population_un_density_hectare", "building_to_block_area_ratio", "average_building_area_m2", "region_urban_share", "region_nonurban_share", "population_k_1", "population_k_2", "population_k_3", "population_k_4", "population_k_5", "population_k_6", "population_k_7", "population_k_8", "population_k_9", "population_k_10plus", "population_off_network", "bldg_area_count_bin_01_0.50__log10_3.2", "bldg_area_count_bin_02_0.75__log10_5.6", "bldg_area_count_bin_03_1.00__log10_10", "bldg_area_count_bin_04_1.25__log10_17.8", "bldg_area_count_bin_05_1.50__log10_31.6", "bldg_area_count_bin_06_1.75__log10_56.2", "bldg_area_count_bin_07_2.00__log10_100", "bldg_area_count_bin_08_2.25__log10_177.8", "bldg_area_count_bin_09_2.50__log10_316.2", "bldg_area_count_bin_10_2.75__log10_562.3", "bldg_area_count_bin_11_3.00__log10_1000", "bldg_area_count_bin_12_3.25__log10_1778.3")
+complexity_features <- c('k_complexity_average', 'street_density_ratio_km_to_km2', "landscan_population_un_density_hectare", "building_to_block_area_ratio", "average_building_area_m2", "region_urban_share", "region_nonurban_share", "population_k_1", "population_k_2", "population_k_3", "population_k_4", "population_k_5", "population_k_6", "population_k_7", "population_k_8", "population_k_9", "population_k_10plus", "population_off_network", "bldg_area_count_bin_01_0.50__log10_3.2", "bldg_area_count_bin_02_0.75__log10_5.6", "bldg_area_count_bin_03_1.00__log10_10", "bldg_area_count_bin_04_1.25__log10_17.8", "bldg_area_count_bin_05_1.50__log10_31.6", "bldg_area_count_bin_06_1.75__log10_56.2", "bldg_area_count_bin_07_2.00__log10_100", "bldg_area_count_bin_08_2.25__log10_177.8", "bldg_area_count_bin_09_2.50__log10_316.2", "bldg_area_count_bin_10_2.75__log10_562.3", "bldg_area_count_bin_11_3.00__log10_1000", "bldg_area_count_bin_12_3.25__log10_1778.3")
 dhs_features <- cor_dhs %>% select(column_var) %>% pull()
 
 dhs_latex_labels <- list(
@@ -888,7 +988,9 @@ pca_in <-  subnat_pca %>%
 
 (num_dhs_indicators <- length(names(pca_in)))
 nrow(pca_in)
-#names(pca_in)
+
+# List of PCA vars:
+# "EM_OCCP_M_AGR", "EM_OCCP_M_MNS", "EM_OCCP_M_PRO", "EM_OCCP_W_AGR", "EM_OCCP_W_PRO", "HC_WIXQ_P_LOW", "HC_WIXQ_P_2ND", "HC_WIXQ_P_MID", "HC_WIXQ_P_4TH", "HC_WIXQ_P_HGH", "HC_WIXQ_P_GNI", "HC_HEFF_H_FRG", "HC_HEFF_H_MPH", "HC_HEFF_H_TLV", "HC_TRNS_H_CAR", "ED_EDAT_B_MYR", "ED_EDAT_M_MYR", "ED_EDAT_W_MYR", "ED_EDAT_B_NED", "ED_EDAT_B_SEC", "ED_EDAT_B_HGH", "ED_LITR_W_LIT", "ED_LITY_W_LIT", "ED_LITY_W_NRD", "ED_EDUC_W_SEH", "ED_EDAT_W_NED", "ED_EDAT_W_SEC", "ED_EDAT_W_HGH", "ED_MDIA_W_3MD", "ED_MDIA_W_N3M", "FP_NADM_W_MNT", "RH_DELP_C_DHF", "CM_ECMR_C_CMR", "CM_ECMR_C_IMR", "CM_ECMR_C_PNR", "CM_ECMR_C_U5M", "CH_VACC_C_BAS", "CN_IYCF_C_4FA", "CN_NUTS_C_HA2", "CN_NUTS_C_WA2", "CN_NUTS_C_WH2", "CN_ANMC_C_ANY", "WS_TLET_P_BAS", "WS_TLET_P_IMP", "WS_TLET_P_NFC", "WS_SRCE_P_BAS", "WS_SRCE_P_IMP", "WS_SRCE_P_IOP", "WS_SRCE_P_LTD", "WS_SRCE_P_NIM", "WS_SRCE_P_PIP", "WS_TIME_P_L30", "WS_TIME_P_M30", "WS_TIME_P_ONP", "HC_PPRM_H_MNP", "HC_OLDR_H_3GN", "HC_PPRM_H_12P", "HC_PPRM_H_34P", "HC_PPRM_H_56P", "HC_PPRM_H_7PP", "HC_CKPL_P_HSE", "HC_CKFL_P_CLN", "HC_CKFL_P_SLD", "HC_ELEC_P_ELC", "HC_ELEC_P_NEL", "HC_FLRM_P_ETH", "HC_FLRM_P_NAT"
 
 # ISO Table ---------------------------------------------------------------
 
@@ -947,10 +1049,18 @@ pca_reg_data <- pca_reg_data %>%
   #mutate(dummy = 1) %>% tidyr::spread(country, dummy, fill = 0) %>% select(-one_of(country_dummies_drop)) %>%
   distinct() 
 
-rcorr(pca_reg_data %>% 
+cor_pc1_k <- rcorr(pca_reg_data %>% 
         select(PC1, k_complexity_average) %>% as.matrix(),
-      type=c('spearman')) %>% tidy() %>% select(estimate)
+      type=c('spearman')) %>% tidy() %>% select(estimate, n, p.value) %>%
+  mutate(col = 'k_complexity_average')
 
+cor_pc1_street <- rcorr(pca_reg_data %>% 
+        select(PC1, street_density_ratio_km_to_km2) %>% as.matrix(),
+      type=c('spearman')) %>% tidy() %>% select(estimate, n, p.value) %>%
+  mutate(col = 'street_density_ratio_km_to_km2')
+
+
+# Without street density --------------------------------------------------
 
 lm_model <- linear_reg()
 linear_reg_single <- lm_model %>% fit(PC1 ~ k_complexity_average,  data = pca_reg_data)
@@ -975,7 +1085,34 @@ reg_pca_output <- rbind(tidy(linear_reg_single, conf.int = TRUE) %>% mutate_if(i
                           cbind(., tidy(linear_reg_controls_imp, conf.int = TRUE) %>% mutate_if(is.numeric, round, 7) %>% select(estimate) %>% rename(importance = estimate))
                         )
 
-write_excel_csv(reg_pca_output, paste0(wd_path,'/analysis/','pc1_regression_table.csv'))
+write_excel_csv(reg_pca_output, paste0(wd_path,'/data/','pc1_regression_table.csv'))
+
+# With street density --------------------------------------------------
+
+lm_model <- linear_reg()
+linear_reg_single <- lm_model %>% fit(PC1 ~ k_complexity_average + street_density_ratio_km_to_km2,  data = pca_reg_data)
+linear_reg_countries <- lm_model %>% fit(PC1 ~ ., data = pca_reg_data %>% select_at(all_of(c('PC1', 'k_complexity_average', 'street_density_ratio_km_to_km2', country_fixed_effects))))
+linear_reg_controls <- lm_model %>%  fit(PC1 ~ ., data = pca_reg_data %>% select_at(all_of(c('PC1', specifications, 'street_density_ratio_km_to_km2', country_fixed_effects))))
+
+linear_reg_single_imp <- lm_model %>% fit(PC1 ~ norm_k_complexity_average + norm_street_density_ratio_km_to_km2,  data = pca_reg_data)
+linear_reg_countries_imp <-  lm_model %>% fit(PC1 ~ ., data = pca_reg_data %>% select_at(all_of(c('PC1', 'norm_k_complexity_average', 'norm_street_density_ratio_km_to_km2', country_fixed_effects))))
+linear_reg_controls_imp <- lm_model %>%  fit(PC1 ~ ., data = pca_reg_data %>% select_at(all_of(c('PC1', purrr::map_chr(specifications, ~ paste0("norm_", .)), 'norm_street_density_ratio_km_to_km2', country_fixed_effects))))  
+
+reg_pca_output_street_density <- rbind(tidy(linear_reg_single, conf.int = TRUE) %>% mutate_if(is.numeric, round, 7) %>% 
+                          mutate(distribution = 'linear', predictors = 'k', dv_var = 'PC1', dv_label = 'Principal Component 1') %>%
+                          cbind(.,glance(linear_reg_single)) %>%
+                          cbind(., tidy(linear_reg_single_imp, conf.int = TRUE) %>% mutate_if(is.numeric, round, 7) %>% select(estimate) %>% rename(importance = estimate)),
+                        tidy(linear_reg_countries, conf.int = TRUE) %>% mutate_if(is.numeric, round, 7) %>% 
+                          mutate(distribution = 'linear', predictors = 'k_fe', dv_var = 'PC1', dv_label = 'Principal Component 1') %>%
+                          cbind(.,glance(linear_reg_countries))  %>%
+                          cbind(., tidy(linear_reg_countries_imp, conf.int = TRUE) %>% mutate_if(is.numeric, round, 7) %>% select(estimate) %>% rename(importance = estimate)),
+                        tidy(linear_reg_controls, conf.int = TRUE) %>% mutate_if(is.numeric, round, 7) %>% 
+                          mutate(distribution = 'linear', predictors = 'k_controls_fe', dv_var = 'PC1', dv_label = 'Principal Component 1') %>%
+                          cbind(.,glance(linear_reg_controls)) %>%
+                          cbind(., tidy(linear_reg_controls_imp, conf.int = TRUE) %>% mutate_if(is.numeric, round, 7) %>% select(estimate) %>% rename(importance = estimate))
+)
+
+write_excel_csv(reg_pca_output_street_density, paste0(wd_path,'/data/','pc1_regression_table_street_density.csv'))
 
 
 # DHS component vs block complexity ---------------------------------------
@@ -996,11 +1133,11 @@ pca_loadings %>% as_tibble() %>% print(n = 100)
 # write_excel_csv(pca_var_explained, paste0(wd_path,'/analysis/','pca_var_explained_34DHS.csv'))
 
 writexl::write_xlsx(list('pca_regression' = reg_pca_output,
+                         'pca_regression_street' = reg_pca_output_street_density,
                          'pca_loadings' = pca_loadings, 
                          'pca_var_explained' = pca_var_explained), 
                     col_names = TRUE, format_headers = TRUE, 
-                    path = paste0(wd_path,'/analysis/','pca_var_analysis.xlsx'))
-
+                    path = paste0(wd_path,'/data/','pca_var_analysis.xlsx'))
 
 # Latex -------------------------------------------------------------------
 
@@ -1059,9 +1196,32 @@ for (i in unique(latex_table$category)) {
     }
 }
 
-write_csv(latex_code_df, paste0(wd_path,'/analysis/','latex_table.csv'))
+write_csv(latex_code_df, paste0(wd_path,'/data/','latex_table.csv'))
 
-
+# 
+# Street density vs Block complexity 
+# library(ggrepel)
+# ggplot() + 
+#   geom_point(data = subnat_clusters, 
+#              aes(x = log10(k_complexity_average), y = PC1,
+#                  color = ISO, size = log10(landscan_population_un)), alpha = .4) +
+#   labs(x = 'Block complexity', y = 'PC1', color = 'ISO') + 
+#   scale_x_continuous(oob = scales::squish, breaks= c(0, 0.30103, 0.4771213, 0.60206, 0.69897, 0.7781513, 0.845098, 0.90309, 0.9542425, 1,1.041393,1.079181,1.113943,1.146128,1.176091,1.20412,1.230449,1.255273,1.278754,1.30103,1.322219,1.342423,1.361728,1.380211,1.39794, 1.414973, 1.431364, 1.447158, 1.462398, 1.477121), labels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30) )+
+#   geom_text_repel(data = subnat_clusters, seed = 1, segment.curvature = -0.1, point.padding = 0, box.padding = 0.4, max.iter = 30000, segment.square  = FALSE, segment.inflect = FALSE, min.segment.length = .2, max.overlaps = Inf, force = .5, force_pull = 10, 
+#                   aes(x = log10(k_complexity_average), y = PC1, label = paste0(ISO) ), size = 3, vjust =.5, color = '#333333', fontface='bold') +
+#   scale_size_continuous(range = c(1,10), labels = label_comma(accuracy = 1L, scale =  0.000001, suffix = "M") ) +
+#   theme_classic() + theme(legend.position = 'none') +
+# ggplot() + 
+#   geom_point(data = subnat_clusters, 
+#              aes(x = street_density_ratio_km_to_km2, y = PC1,
+#                  color = ISO, size = log10(landscan_population_un)), alpha = .4) +
+#   labs(x = 'Street density ratio (km per km2)', y = 'PC1', color = 'ISO') +
+#   scale_x_continuous(limits = c(0,1.5)) +
+#   #scale_x_continuous(oob = scales::squish,  breaks= c(0, 0.30103, 0.4771213, 0.60206, 0.69897, 0.7781513, 0.845098, 0.90309, 0.9542425, 1,1.041393,1.079181,1.113943,1.146128,1.176091,1.20412,1.230449,1.255273,1.278754,1.30103,1.322219,1.342423,1.361728,1.380211,1.39794, 1.414973, 1.431364, 1.447158, 1.462398, 1.477121),  labels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30) )+
+#   geom_text_repel(data = subnat_clusters, seed = 1, segment.curvature = -0.1, point.padding = 0, box.padding = 0.4, max.iter = 30000, segment.square  = FALSE, segment.inflect = FALSE, min.segment.length = .2, max.overlaps = Inf, force = .5, force_pull = 10, 
+#                   aes(x = street_density_ratio_km_to_km2, y = PC1, label = paste0(ISO) ), size = 3, vjust =.5, color = '#333333', fontface='bold') +
+#   scale_size_continuous(range = c(1,10), labels = label_comma(accuracy = 1L, scale =  0.000001, suffix = "M") ) +
+#   theme_classic() + theme(legend.position = 'none')
 
 # DHS v PCA Scatter -------------------------------------------------------
 
@@ -1141,12 +1301,9 @@ design3 <- "
 # subnat_clusters %>% select(ISO) %>% distinct()
 # "PCA on the following dimensions: percentage of de jure population with an improved sanitation facility; with an improved water source on the premises; with basic sanitation service; basic water service; earth/sand floors; with electricity; with limited sanitation service; with limited water service; with natural floors; with water on the premises; in each wealth quintile; living in households whose main source of drinking water is an improved source; mean number of persons per sleeping room; and percentage of households with 1 to 2, 3 to 4, 5 to 6, or 7 or more persons per sleeping room; percentage of women who are literate."
 
-       
 ggsave(plot = dhs_k_v_pca_grob, filename = paste0(wd_path,'/viz/scatter_k_PC1.pdf'), width = 16, height = 12)  
-
-
+rm(dhs_k_v_pca_grob)
 # 4 x 3  ------------------------------------------------------------------
-
 
 (dhs_k_v_pca_4x3 <- (ggplot(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, color = EM_OCCP_M_AGR)) +
    geom_smooth(method = "lm", formula =  'y ~ (x)', se = FALSE, color = '#333333') +
@@ -1309,9 +1466,434 @@ ggsave(plot = dhs_k_v_pca_grob, filename = paste0(wd_path,'/viz/scatter_k_PC1.pd
                                              bottom = text_grob("Block complexity", rot = 0, vjust = -9, size = 15, face = "bold") ) )
 
 ggsave(plot = dhs_k_v_pca_grob_4x3, filename = paste0(wd_path,'/viz/scatter_k_PC1_4x3.pdf'), width = 12.3, height = 16)  
+rm(dhs_k_v_pca_4x3 )
+
+# OSM street completeness comparison ---------------------------------------------
+
+k_country <- read_parquet(paste0('data/africa_data.parquet')) %>%
+  mutate(k_complexity_wt = k_complexity * landscan_population_un) %>%
+  group_by(country_code) %>%
+  summarize_at(vars(k_complexity_wt, block_area_km2, landscan_population_un), list(sum)) %>%
+  ungroup() %>%
+  mutate(k_complexity_wt = k_complexity_wt/landscan_population_un)
+
+street_validation <- read_csv('data/streets_external_validation.csv') %>%
+  mutate(osm_cia_ratio = osm_total_streets_km / cia_roadways_km,
+         osm_ecopia_ratio = osm_total_streets_km / ecopia_ml_roads_km,
+         osm_irf_ratio = osm_total_streets_km / irf_all_roads_km,
+         osm_vehic_cia_ratio = osm_vehicular_streets_km / cia_roadways_km,
+         osm_vehic_ecopia_ratio = osm_vehicular_streets_km / ecopia_ml_roads_km,
+         osm_vehic_irf_ratio = osm_vehicular_streets_km / irf_all_roads_km)
+
+street_validation <- street_validation %>%
+  left_join(., k_country  %>% select(country_code, k_complexity_wt , block_area_km2),
+            by = c('country_code' = 'country_code'))
+
+# Correlation of street length sources
+(corr_osm_streets_v_external <- rcorr(street_validation %>% select(osm_vehicular_streets_km, osm_total_streets_km, 
+                                   cia_roadways_km, irf_all_roads_km, ecopia_ml_roads_km)
+      %>% as.matrix(), type=c('spearman')) %>% tidy() %>% 
+  filter(column2 %in% c('osm_vehicular_streets_km', 'osm_total_streets_km'),
+         !(column1 %in% c('osm_vehicular_streets_km', 'osm_total_streets_km'))) %>%
+  arrange(column2, column1) %>%
+  rename(osm_var = column2,
+         external_source = column1))
+
+# Correlation of OSM ratios and block complexity
+(corr_osm_ratios_v_k <- rcorr(street_validation %>% select(k_complexity_wt, osm_cia_ratio, osm_ecopia_ratio, osm_irf_ratio, osm_vehic_cia_ratio, osm_vehic_ecopia_ratio, osm_vehic_irf_ratio)
+      %>% as.matrix(), type=c('spearman')) %>% tidy() %>% 
+  filter(column2 %in% c('k_complexity_wt')) %>%
+  arrange(column2, column1) )
+
+# Correlation of street density and block complexity
+(corr_street_v_k <- rcorr(street_validation %>% 
+        mutate(street_density_km_km2 = osm_vehicular_streets_km/block_area_km2) %>%
+        select(k_complexity_wt, street_density_km_km2) %>%
+       as.matrix(), type=c('spearman')) %>% tidy() %>% 
+  filter(column2 %in% c('k_complexity_wt')) %>%
+  arrange(column2, column1))
+
+# Summary of OSM ratios
+(completeness_summary <- street_validation %>%
+  mutate(osm_cia_ratio_gte1 = case_when(osm_cia_ratio >= 1 ~ 1, TRUE ~ 0),
+         cia_count = case_when(!is.na(osm_total_streets_km) ~ 1, TRUE ~ 0),
+         osm_ecopia_ratio_gte1 = case_when(osm_ecopia_ratio >= 1 ~ 1, TRUE ~ 0),
+         ecopia_count = case_when(!is.na(ecopia_ml_roads_km) ~ 1, TRUE ~ 0),
+         osm_irf_ratio_gte1 = case_when(osm_irf_ratio >= 1 ~ 1, TRUE ~ 0),
+         irf_count = case_when(!is.na(irf_all_roads_km) ~ 1, TRUE ~ 0),
+         osm_vehic_cia_ratio_gte1 = case_when(osm_vehic_cia_ratio >= 1 ~ 1, TRUE ~ 0),
+         osm_vehic_ecopia_ratio_gte1 = case_when(osm_vehic_ecopia_ratio >= 1 ~ 1, TRUE ~ 0),
+         osm_vehic_irf_ratio_gte1 = case_when(osm_vehic_irf_ratio >= 1 ~ 1, TRUE ~ 0)) %>%
+  summarize_at(vars(cia_count, ecopia_count, irf_count, osm_cia_ratio_gte1, osm_ecopia_ratio_gte1, osm_irf_ratio_gte1, osm_vehic_cia_ratio_gte1, osm_vehic_ecopia_ratio_gte1, osm_vehic_irf_ratio_gte1), list(sum)) %>%
+  pivot_longer(cols = everything()))
+
+# Correlations at each K level
+k_country_k_15 <- read_parquet(paste0('data/africa_data.parquet')) %>%
+  group_by(k_labels_detailed, country_code, country_name) %>%
+  summarize_at(vars(landscan_population_un), list(sum)) %>%
+  ungroup() %>%
+  mutate(k_labels_15 = case_when(k_labels_detailed %in% c("15", "16", "17","18","19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30+") ~ '15+',
+                                 TRUE ~ as.character(k_labels_detailed)),) %>%
+  group_by(k_labels_15, country_code, country_name) %>%
+  summarize_at(vars(landscan_population_un), list(sum)) %>%
+  ungroup() %>%
+  group_by(country_code, country_name) %>%
+  mutate(shr_landscan_population_un = landscan_population_un / sum(landscan_population_un)) %>%
+  ungroup() %>%
+  select(country_code, country_name, k_labels_15, shr_landscan_population_un)
+
+k_15 <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15+", "Off-network")
+
+k_country_k_15 <- k_country_k_15 %>%
+  left_join(., street_validation %>% select(country_code,
+                     osm_cia_ratio, osm_ecopia_ratio, osm_irf_ratio, 
+                     osm_vehic_cia_ratio, osm_vehic_ecopia_ratio, osm_vehic_irf_ratio,
+                     osm_vehicular_streets_km, block_area_km2) %>%
+              mutate(street_density = osm_vehicular_streets_km / block_area_km2),
+            by =c('country_code'='country_code')) %>%
+  mutate(k_labels_15 = factor(k_labels_15, k_15)) 
+
+ratio_v_thresh <- data.frame('k' = character(),'column1' = character(),'column2' = character(),'estimate' = numeric(),'n' = numeric(),'p.value' = numeric())
+
+for (i in k_15) {
+  for (j in c("street_density", "osm_cia_ratio", "osm_ecopia_ratio", "osm_irf_ratio", "osm_vehic_cia_ratio", "osm_vehic_ecopia_ratio", "osm_vehic_irf_ratio")) {
+    print(i)
+    ratio_i_j <- rcorr(k_country_k_15 %>% filter(k_labels_15 == i) %>%
+            select_at(c('shr_landscan_population_un', j)) %>% as.matrix(),
+          type=c('spearman')) %>% tidy() %>%
+      mutate(k = i)
+    ratio_v_thresh <- rbind(ratio_v_thresh, ratio_i_j)
+  }
+}
+
+ratio_v_thresh <- ratio_v_thresh %>%
+  mutate(k = factor(k, k_15)) 
+
+ggplot(data = ratio_v_thresh %>% filter(column1 == "osm_ecopia_ratio"),
+       aes(x = k, y = estimate)) +
+  geom_hline(yintercept=0, linetype="dashed", color = "#FF6F91") + 
+  #geom_rect(mapping = aes(xmin = "1", xmax = "5", ymin = -Inf, ymax = Inf), fill = "#FF6F91", color = alpha("white",0), alpha = 0.01) +
+  geom_point( size = 1) +
+  #geom_point(aes(size = shr_landscan_population_un), alpha = .8, color = '#845EC2') +
+  geom_line(group = 1) + 
+  #scale_y_continuous(expand = c(0,0), limits = c(-.75,.7)) + 
+  scale_size_continuous( labels = label_percent(), name = 'Share of population') +
+  labs(subtitle = '', y = '', x = '') + 
+  theme_classic() +
+  theme(plot.subtitle = element_text(hjust = .5),
+        legend.position = 'bottom')
 
 
-# Map sub-national DHS data -----------------------------------------------
+# Histograms to characterize gradients of block complexity -----------------------------
+
+k_15 <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15+", "Off-network")
+
+k_thresh_pop_ratio <- read_parquet(paste0('data/africa_data.parquet')) %>%
+  mutate(k_labels_15 = case_when(k_labels_detailed %in% c("15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30+") ~ '15+',
+                                 TRUE ~ as.character(k_labels_detailed)),
+         building_to_block_area_ratio_bucket = case_when(building_to_block_area_ratio <= .001 ~ '< 0.1%',
+                                                         building_to_block_area_ratio > .001 & building_to_block_area_ratio <= .005 ~ '0.1 to 0.5%',
+                                                         building_to_block_area_ratio > .005 & building_to_block_area_ratio <= .01 ~ '0.5 to 1%',
+                                                         building_to_block_area_ratio > .01 & building_to_block_area_ratio <= .05 ~ '1 to 5%',
+                                                         building_to_block_area_ratio > .05 & building_to_block_area_ratio <= .1 ~ '5 to 10%',
+                                                         building_to_block_area_ratio > .1 ~ '> 10%')) %>%
+  group_by(k_labels_15, building_to_block_area_ratio_bucket) %>%
+  summarize_at(vars(landscan_population_un), list(sum)) %>%
+  ungroup() %>%
+  mutate(k_labels_15 = factor(k_labels_15, k_15),
+         building_to_block_area_ratio_bucket = factor(building_to_block_area_ratio_bucket, 
+                                                      c('< 0.1%', '0.1 to 0.5%', '0.5 to 1%', '1 to 5%', '5 to 10%', '> 10%'))) %>%
+  arrange(desc(k_labels_15)) %>% 
+  mutate(cum_landscan_population_un = cumsum(landscan_population_un),
+         tot_landscan_population_un = sum(landscan_population_un),
+         shr_landscan_population_un = landscan_population_un/tot_landscan_population_un,
+         cum_shr_landscan_population_un = cum_landscan_population_un/tot_landscan_population_un) 
+
+k_thresh_pop_size <- read_parquet(paste0('data/africa_data.parquet')) %>%
+  mutate(k_labels_15 = case_when(k_labels_detailed %in% c("15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30+") ~ '15+',
+                                 TRUE ~ as.character(k_labels_detailed)),
+         block_area_km2_bucket = case_when(block_area_km2 < .01 ~ '< 0.01 km2',
+                                           block_area_km2 > .01 & block_area_km2 <= .1 ~ '0.01 to 0.1 km2',
+                                           block_area_km2 > .1 & block_area_km2 <= 1 ~ '0.1 to 1 km2',
+                                           block_area_km2 > 1 &  block_area_km2 <= 10  ~ '1 to 10 km2',
+                                           block_area_km2 > 10 & block_area_km2 <= 100  ~ '10 to 100 km2',
+                                           block_area_km2 > 100 & block_area_km2 <= 500  ~ '100 to 500 km2',
+                                           block_area_km2 > 500 ~ '> 500 km2')) %>%
+  group_by(k_labels_15, block_area_km2_bucket) %>%
+  summarize_at(vars(landscan_population_un), list(sum)) %>%
+  ungroup() %>%
+  mutate(k_labels_15 = factor(k_labels_15, k_15),
+         block_area_km2_bucket = factor(block_area_km2_bucket, c('< 0.01 km2', '0.01 to 0.1 km2', '0.1 to 1 km2', '1 to 10 km2', '10 to 100 km2', '100 to 500 km2', '> 500 km2'))) %>%
+  arrange(desc(k_labels_15)) %>% 
+  mutate(cum_landscan_population_un = cumsum(landscan_population_un),
+         tot_landscan_population_un = sum(landscan_population_un),
+         shr_landscan_population_un = landscan_population_un/tot_landscan_population_un,
+         cum_shr_landscan_population_un = cum_landscan_population_un/tot_landscan_population_un) 
+
+k_thresh_pop_area <- read_parquet(paste0('data/africa_data.parquet')) %>%
+  mutate(k_labels_15 = case_when(k_labels_detailed %in% c("15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30+") ~ '15+',
+                                 TRUE ~ as.character(k_labels_detailed))) %>%
+  group_by(k_labels_15, area_type) %>%
+  summarize_at(vars(landscan_population_un), list(sum)) %>%
+  ungroup() %>%
+  mutate(area_type = ifelse(area_type == 'Non-urban', 'Rural', area_type)) %>%
+  mutate(k_labels_15 = factor(k_labels_15, k_15),
+         area_type = factor(area_type, c('Urban', 'Peri-urban', 'Rural'))) %>%
+  arrange(desc(k_labels_15)) %>% 
+  mutate(cum_landscan_population_un = cumsum(landscan_population_un),
+         tot_landscan_population_un = sum(landscan_population_un),
+         shr_landscan_population_un = landscan_population_un/tot_landscan_population_un,
+         cum_shr_landscan_population_un = cum_landscan_population_un/tot_landscan_population_un) 
+
+(bar_15plus_ratio <- ggplot() +
+    geom_bar(data = k_thresh_pop_ratio, aes(x = k_labels_15, y = shr_landscan_population_un, 
+                                            fill = building_to_block_area_ratio_bucket),  
+             color = '#333333',
+             position="stack",  stat="identity") +
+    scale_y_continuous(expand = c(0, 0), labels = scales::percent ) +
+    scale_fill_manual(name = 'Building to block\narea ratio', values = c('#F9F871', '#FF9671', '#D65DB1', '#2C73D2', '#00C9A7', '#f8f1e1')) + #  '#C4FCEF'
+    labs(subtitle = 'Most k = 15+ blocks have less than 0.5% of area covered in buildings',
+         y = 'Share of population', x = 'Block complexity') + 
+    theme_classic() +
+    theme(#legend.position = 'bottom',
+      plot.subtitle = element_text(hjust = .5)))
+
+(bar_15plus_size <- ggplot() +
+    geom_bar(data = k_thresh_pop_size, aes(x = k_labels_15, y = shr_landscan_population_un, 
+                                           fill = block_area_km2_bucket),  
+             color = '#333333',
+             position="stack",  stat="identity") +
+    scale_y_continuous(expand = c(0, 0), labels = scales::percent ) +
+    scale_fill_manual(name = 'Block area size', values = c('#F9F871', '#FF9671', '#D65DB1', '#845EC2', '#2C73D2', '#00C9A7', '#f8f1e1')) + # '#C4FCEF'
+    labs(subtitle = 'Most k = 15+ blocks are over 10 km2',
+         y = 'Share of population', x = 'Block complexity') + 
+    theme_classic() +
+    theme(#legend.position = 'bottom',
+      plot.subtitle = element_text(hjust = .5)))
+
+(bar_15plus_area <- ggplot() +
+    geom_bar(data = k_thresh_pop_area , aes(x = k_labels_15, y = shr_landscan_population_un, 
+                                            fill = area_type),  
+             color = '#333333',
+             position="stack",  stat="identity") +
+    scale_y_continuous(expand = c(0, 0), labels = scales::percent ) +
+    scale_fill_manual(name = 'Urban / rural', values = c('#F9F871', '#FF9671', '#D65DB1', '#845EC2', '#2C73D2', '#00C9A7', '#f8f1e1')) +   # '#C4FCEF'
+    labs(subtitle = 'Most k = 15+ blocks are rural',
+         y = 'Share of population', x = 'Block complexity') + 
+    theme_classic() +
+    theme(#legend.position = 'bottom',
+      plot.subtitle = element_text(hjust = .5)))
+
+# Combine the bar charts
+(bar_15 <- bar_15plus_ratio + bar_15plus_size + bar_15plus_area & 
+    plot_layout(ncol = 1) &
+    plot_annotation(tag_levels = list(c("A","B", "C"))) & 
+    theme(plot.tag = element_text(size = 13)))
+
+ggsave(plot =  bar_15, filename = paste0(wd_path,'/viz/bar_chart_k_15plus.pdf'), width = 10, height = 11)  
+
+# Correlation of population in block complexity levels vs PC1 -----------------------------------------------------
+
+# Box.com link with access to staging files:
+# Access subnat_to_blocks here: https://uchicago.box.com/s/anw4fxc376dgtgol9tt87tuozipnk0kj
+# subnat_to_blocks <- read_parquet(paste0(wd_path,'/data/blocks_to_dhs.parquet'))
+k_levels_vs_pc1 <- read_parquet(paste0('data/africa_data.parquet')) %>%
+  inner_join(., subnat_to_blocks, by = c('block_id'='block_id')) 
+
+k_levels_vs_pc1 <- k_levels_vs_pc1 %>%
+  mutate(k_complexity_wt = k_complexity * landscan_population_un) %>%
+  group_by(k_labels_detailed, ISO3_CountryCode, DHS_CountryCode, SurveyId, SurveyYear, REGCODE, REG_ID, REGNAME, CNTRYNAMEE, DHSREGEN) %>%
+  summarize_at(vars(k_complexity_wt, landscan_population_un), list(sum)) %>%
+  ungroup() %>%
+  mutate(k_labels_15 = case_when(k_labels_detailed %in% c("15", "16", "17","18","19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30+") ~ '15+',
+                                 TRUE ~ as.character(k_labels_detailed)),) %>%
+  group_by(k_labels_15, ISO3_CountryCode, DHS_CountryCode, SurveyId, SurveyYear, REGCODE, REG_ID, REGNAME, CNTRYNAMEE, DHSREGEN) %>%
+  summarize_at(vars(k_complexity_wt, landscan_population_un), list(sum)) %>%
+  ungroup() %>%
+  mutate(k_complexity_wt = k_complexity_wt/landscan_population_un)
+
+k_15 <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15+", "Off-network")
+
+k_levels_vs_pc1 <- k_levels_vs_pc1 %>%
+  mutate(k_labels_15 = factor(k_labels_15, k_15)) %>%
+  arrange(SurveyId, REG_ID, desc(k_labels_15)) %>%
+  group_by(SurveyId, REG_ID) %>% 
+  mutate(cum_landscan_population_un = cumsum(landscan_population_un),
+         tot_landscan_population_un = sum(landscan_population_un),
+         shr_landscan_population_un = landscan_population_un/tot_landscan_population_un,
+         cum_shr_landscan_population_un = cum_landscan_population_un/tot_landscan_population_un) %>%
+  ungroup() %>%
+  select(ISO3_CountryCode, DHS_CountryCode, SurveyId, SurveyYear, REGCODE, REG_ID, REGNAME, CNTRYNAMEE, DHSREGEN, 
+         k_labels_15, cum_landscan_population_un, tot_landscan_population_un,
+         shr_landscan_population_un, cum_shr_landscan_population_un, landscan_population_un) 
+  
+k_levels_vs_pc1 <- k_levels_vs_pc1 %>%
+  left_join(., subnat_clusters %>% 
+              select(REG_ID, street_density_ratio_km_to_km2, k_complexity_average, PC1),
+            by = c('REG_ID' = 'REG_ID'))
+  
+pc1_k_corr <- data.frame('k' = character(),'column1' = character(),'column2' = character(),'estimate' = numeric(),'n' = numeric(),'p.value' = numeric())
+
+for (i in k_15) {
+  k_thresh_i <- rcorr(k_levels_vs_pc1 %>% filter(k_labels_15 == i) %>%
+          select_at(c('shr_landscan_population_un', 'PC1')) %>% as.matrix(),
+                       type=c('spearman')) %>% tidy() %>%
+      mutate(k = i)
+  pc1_k_corr <- rbind(pc1_k_corr, k_thresh_i)
+}
+
+k_thresh_corr <- k_levels_vs_pc1 %>%
+  group_by(k_labels_15) %>%
+  summarise(
+    landscan_population_un = sum(landscan_population_un),
+    pc1_cor_shr=stats::cor(shr_landscan_population_un, PC1, use =  "complete.obs", method = "spearman")
+    ) %>%
+  ungroup() %>%
+  mutate(shr_landscan_population_un = landscan_population_un/sum(landscan_population_un)) %>%
+  left_join(., pc1_k_corr %>%
+              select(estimate, n, p.value, k), by = c('k_labels_15'='k')) %>%
+  mutate(k_labels_15 = factor(k_labels_15, k_15 ))
+
+# Spearman correlation between population share at each level of k and PC1 across DHS regions
+(line_correl_k_thresh <- ggplot(data = k_thresh_corr,
+             aes(x = k_labels_15, y = estimate)) +
+    geom_hline(yintercept=0, linetype="dashed", color = "#FF6F91") + 
+    geom_rect(mapping = aes(xmin = "1", xmax = "5", ymin = -Inf, ymax = Inf), fill = "#FF6F91", color = alpha("white",0), alpha = 0.01) +
+    geom_point( size = 1) +
+    geom_point(aes(size = shr_landscan_population_un), alpha = .8, color = '#845EC2') +
+    geom_line(group = 1) + 
+    scale_y_continuous(expand = c(0,0), limits = c(-.75,.7)) + 
+    scale_size_continuous( labels = label_percent(), name = 'Share of population') +
+    labs(subtitle = 'Block complexity correlation with PC1 begins to slightly weaken\nwhen k = 15+ and for off-network blocks across DHS regions',
+         y = 'Spearman correlation with PC1 at each block complexity level', x = 'Population share at each block complexity level correlated with PC1') + 
+    theme_classic() +
+    theme(plot.subtitle = element_text(hjust = .5),
+          plot.margin=unit(c(t=3,r=30,b=5,l=5), "pt"),
+          legend.position = 'bottom'))
+
+# Block complexity vs OSM completeness ---------------------------------------------
+
+k_15_data <- read_parquet(paste0('data/africa_data.parquet')) %>%
+  mutate(block_complexity_wt = landscan_population_un * k_complexity) %>%
+  mutate(k_labels_15 = case_when(k_labels_detailed %in% c("15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30+", "Off-network") ~ '15+',
+                                 TRUE ~ as.character(k_labels_detailed)), 
+         area_type = case_when(area_type %in% c('Peri-urban', 'Non-urban') ~ 'nonurban',
+                                TRUE ~ 'urban')) %>%
+  group_by(area_type, k_labels_15, country_code, country_name) %>%
+  summarize_at(vars(block_complexity_wt, landscan_population_un, block_area_km2), list(sum), na.rm = TRUE) %>%
+  ungroup()
+
+# Average block complexity by country 
+k_15_complexity <- k_15_data  %>%
+  group_by(country_code) %>%
+  summarize_at(vars(block_complexity_wt, landscan_population_un), list(sum)) %>%
+  ungroup() %>%
+  mutate(block_complexity_wt =block_complexity_wt/ landscan_population_un ) 
+  
+# Population share by urban/rural area and country
+k_15_ratios_area <- k_15_data  %>%
+  group_by(area_type, country_code) %>%
+  summarize_at(vars(landscan_population_un, block_area_km2), list(sum)) %>%
+  ungroup() %>%
+  group_by(country_code) %>% 
+  mutate(pop_share_country = landscan_population_un/ sum(landscan_population_un)) %>%
+  ungroup() %>%
+  group_by(area_type) %>% 
+  mutate(pop_share_type = landscan_population_un/ sum(landscan_population_un)) %>%
+  ungroup() %>%
+  select(country_code, area_type, pop_share_country, pop_share_type) %>%
+  pivot_wider(id_cols = country_code, names_from = area_type, values_from = c(pop_share_country, pop_share_type), values_fill = 0)
+
+# Population share by block complexity and country
+k_15 <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15+", "Off-network")
+k_15_ratios_levels <- k_15_data %>%
+  group_by(k_labels_15, country_code, country_name) %>%
+  summarize_at(vars(landscan_population_un, block_area_km2), list(sum)) %>%
+  ungroup() %>%
+  mutate(k_labels_15 = factor(k_labels_15, k_15)) %>%
+  arrange(desc(k_labels_15)) %>% 
+  group_by(k_labels_15) %>% 
+  mutate(pop_share_k = landscan_population_un/sum(landscan_population_un),
+         area_share_k = block_area_km2 / sum(block_area_km2 ) ) %>%
+  ungroup() %>%
+  group_by(country_code) %>%
+  mutate(pop_share_country = landscan_population_un/sum(landscan_population_un)) %>%
+  ungroup() %>%
+  filter(k_labels_15 == '15+') %>%
+  mutate(pop_density_k = landscan_population_un/block_area_km2,
+         ratio_pop_area = pop_share_k / area_share_k )
+
+k_15_ratios <- street_validation %>%
+  select(country_code,  osm_cia_ratio, osm_vehic_cia_ratio, osm_ecopia_ratio, osm_vehic_ecopia_ratio) %>%
+  left_join(., k_15_ratios_area, by =  c('country_code'='country_code')) %>%
+  left_join(., k_15_ratios_levels , by =  c('country_code'='country_code')) %>%
+  left_join(., k_15_complexity %>% select(country_code, block_complexity_wt)) %>%
+  mutate(ratio_15_nonurban = pop_share_k / pop_share_type_nonurban, by =  c('country_code'='country_code'))
+          #= pop_share_country / pop_share_country_nonurban)
+
+# Scatter comparing average block complexity and OSM street to CIA ratio
+(scatter_15plus_outliers <- ggplot() +
+    geom_hline(yintercept= 0,  color = "#FF6F91") + 
+    #geom_vline(xintercept= 1,  color = "#FF6F91") +
+    geom_point(data = k_15_ratios,
+               aes(x = block_complexity_wt, y = log10(osm_vehic_cia_ratio), 
+                   size = landscan_population_un) , color = '#845EC2', alpha = 0.8) +
+    geom_text_repel(data = k_15_ratios,
+                    seed = 1, segment.curvature = -0.1, point.padding = 0, box.padding = 0.4, max.iter = 30000, segment.square  = FALSE, segment.inflect = FALSE, 
+                    min.segment.length = 0, max.overlaps = Inf, force = .1, force_pull = 10, 
+                    aes(x = block_complexity_wt, y = log10(osm_vehic_cia_ratio), label = country_name), 
+                    size = 3, vjust =.5, color = '#333333', fontface='bold') + 
+    #geom_text(x = 4, y = log10(.5), label = 'OSM reports less vehicular roadway than CIA') + 
+    #geom_text(x = 4, y = log10(15), label = 'OSM reports more vehicular roadway than CIA') +
+    #scale_x_continuous(labels = scales::percent, breaks = c(0, .05, .1, .15, .2, .25, .3)) +
+    scale_y_continuous(breaks = c( log10(.5), log10(1), log10(10), log10(100)), labels = c( .5, 1, 10, 100)) +
+    labs(subtitle = 'South Sudan and Eritrea have relatively high block complexity\nand report less roadway in OSM than the CIA World Factbook',
+         #x = "Ratio of population share in k = 15+ / off-network blocks to non-urban population share",
+         x = "Average block complexity (weighted to population)",
+         y = "OSM completeness\n(ratio of OSM vehicular street distance to CIA roadway distance)") +
+    theme_classic() +
+    theme(legend.position = 'none', 
+          plot.subtitle = element_text(hjust = .5)))
+
+(k_thresh_charts <- line_correl_k_thresh  + scatter_15plus_outliers & 
+  plot_layout(ncol = 2) &
+  plot_annotation(tag_levels = list(c("A", "B"))) & 
+  theme(plot.tag = element_text(size = 13)))
+
+ggsave(plot = k_thresh_charts, filename = paste0(wd_path,'/viz/scatter_k_thresh.pdf'), width = 17, height = 7)  
+
+
+# Write analytics table ---------------------------------------------------
+
+
+writexl::write_xlsx(list('corr_dhs' = cor_dhs,
+                         'corr_dhs_k_v_street' = cor_summary_streets_v_k,
+                         'corr_un' = cor_un, 
+                         'low_pval_street' = insig_street_density,
+                         'pc1_regs_k' = reg_pca_output,
+                         'pc1_regs_k_w_street' = reg_pca_output_street_density,
+                         'pca_loadings' = pca_loadings, 
+                         'pca_var_exp' = pca_var_explained,
+                         'pc1_corr' = rbind(cor_pc1_k, cor_pc1_street),
+                         'pc1_corr_k_thres' = k_thresh_corr,
+                         'latex_table' = latex_table, #latex_code_df,
+                         'corr_street_v_k' = corr_street_v_k,
+                         'corr_street_sources' = corr_osm_streets_v_external,
+                         'corr_osm_ratios_v_k' = corr_osm_ratios_v_k,
+                         'corr_osm_ratios_v_k_levels' = ratio_v_thresh,
+                         'osm_ratio_grt1' = completeness_summary,
+                         'street_data' = street_validation,
+                         'indicator_preds' = combined_pred_output, 
+                         'indicator_regs' = combined_reg_output ),
+                         #'offnet_country' = rbind(k_data_offnet_country, k_data_offnet_15_country),
+                         #'offnet_all' = rbind(k_data_offnet_all, k_data_offnet_15_all)),
+                    col_names = TRUE, format_headers = TRUE,
+                    path = paste0(wd_path,'/data/dhs_analysis_tables.xlsx'))
+
+
+# Appendix ----------------------------------------------------------------
+
+# Map of sub-national DHS data -----------------------------------------------
 
 map_theme <- theme_bw() +
   theme(legend.title = element_blank(),
@@ -1409,7 +1991,7 @@ for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
       #plot_layout(guides = 'collect') &
       plot_annotation(title = paste0(title_country,' ',title_year,' | Household Characteristics')) & 
       map_theme #+ theme(legend.position = 'bottom')
-    ggsave(plot = dhs_infra, filename = paste0(wd_path,'viz/maps/',title_country,'-',title_year,'-','infra.png'), width = 12, height = 6, dpi = 400)  
+    ggsave(plot = dhs_infra, filename = paste0(wd_path,'/viz/maps/',title_country,'-',title_year,'-','infra.png'), width = 12, height = 6, dpi = 400)  
   }
   #dhs_infra
   
@@ -1622,8 +2204,71 @@ dhs_k <- (
 dhs_k
 ggsave(plot = dhs_k, filename = paste0(wd_path,'/viz/maps/','africa-complexity.pdf'), width = 10, height = 8)  
 
+
+# How to process street density for the DHS -------------------------------
+
+# rsync -avz --exclude '*polygon*' nmarchio@midway.rcc.uchicago.edu:/project2/bettencourt/mnp/update/inputs/osm/parquet /Users/nm/Downloads/osm-line
+dhs_list <- subnat_all_wide %>% select(ISO3_CountryCode) %>% st_drop_geometry() %>% distinct() %>% pull()
+
+dhs_region_streets <- data.frame("ISO3_CountryCode" = as.character(),
+                                 "REG_ID" = as.character(),
+                                 "highway_length_meters" = as.numeric(),
+                                 "region_area_m2" = as.numeric()) 
+
+for (i in dhs_list) {
+  print(i)
+  
+  highways <- arrow::open_dataset(paste0('osm-line/parquet/',i,'-linestring.parquet')) %>%
+    filter(!is.na(highway)) %>%
+    filter(highway %in% c('motorway', 'trunk', 'primary', 'secondary', 'tertiary',  'unclassified', 'residential', 'motorway_link',  'trunk_link',  'road', 'primary_link',  'secondary_link',  'living_street')) %>%
+    select(highway, geometry)  %>%
+    read_sf_dataset() %>%
+    st_set_crs(4326) %>%
+    st_union()
+  
+  regions_i <- subnat_all_wide %>%
+    filter(ISO3_CountryCode == i) %>%
+    select(ISO3_CountryCode, SVYYEAR, CNTRYNAMEE, DHSREGEN, SVYID, REG_ID, REGCODE, REGNAME)
+  
+  for (j in unique(regions_i$REG_ID)) {
+    print(j)
+    regions_j <- regions_i %>%
+      filter(REG_ID == j) %>%
+      st_transform(3395) %>%
+      mutate(region_area_m2 = as.numeric(st_area(.))) %>%
+      st_simplify(x = ., preserveTopology = TRUE, dTolerance = units::set_units(500,m)) %>%
+      st_make_valid() %>%
+      st_transform(4326)
+    
+    highways_j <- highways %>%
+      #sf::st_crop(x = . , y = regions_j) %>%
+      #mutate(in_zone = ifelse(sf::st_intersects(., st_bbox(regions_j), sparse = F), "Yes", "No")) %>% 
+      #filter(in_zone == 'Yes') 
+      st_intersection(., regions_j) %>%
+      st_drop_geometry() %>%
+      st_transform(3395) %>%
+      st_as_sf() %>%
+      mutate(highway_length_meters = as.numeric(st_length(.))) %>%
+      st_transform(4326) %>%
+      st_drop_geometry() %>%
+      mutate(ISO3_CountryCode = i,
+             REG_ID = j,
+             region_area_m2 = regions_j$region_area_m2) %>%
+      relocate(ISO3_CountryCode, REG_ID, highway_length_meters, region_area_m2)
+    
+    dhs_region_streets <- rbind(dhs_region_streets, highways_j)
+  }
+}
+
+write_csv(dhs_region_streets, 'data/streets_dhs_regions.csv')
+
+# osm_missing <- read_delim('https://geodata-eu-central-1-kontur-public.s3.eu-central-1.amazonaws.com/kontur_reports/osm_missing_roads.csv', delim = ';') %>%
+#   group_by(Country) %>%
+#   summarize_at(vars(`OSM roads length, km`, `Facebook roads length, km`), list(sum)) %>%
+#   ungroup()
+
 # Citations ---------------------------------------------------------------
-# 
+
 # The DHS Program Indicator Data API, The Demographic and Health Surveys (DHS) Program. ICF International.
 # Funded by the United States Agency for International Development (USAID). Available from api.dhsprogram.com. [Accessed 02-10-2023]
 # ICF. The DHS Program Spatial Data Repository. Funded by USAID. spatialdata.dhsprogram.com.  [Accessed 02-10-2023].
@@ -1675,3 +2320,8 @@ ggsave(plot = dhs_k, filename = paste0(wd_path,'/viz/maps/','africa-complexity.p
 #   replace_na(., list(NumberOfMen = 0, NumberOfWomen = 0)) %>%
 #   mutate(SampleNumber = NumberOfMen + NumberOfWomen)
 # write_excel_csv(meta_surveys, paste0(wd_path,'/data/metadata/','metadata.csv'))
+
+
+
+
+

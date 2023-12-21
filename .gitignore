@@ -2,5 +2,11 @@
 .vscode
 .DS_Store
 __pycache__/
+/__pycache__
 .*
 !.gitignore
+/data/complexity-analysis
+/data/dhs-analysis
+/data/graph-viz
+/data/africa_data.parquet
+/data/africa_geodata.parquet
