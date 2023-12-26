@@ -5,9 +5,22 @@ library(sf)
 library(scales)
 library(units)
 library(arrow)
-library(geoarrow)
 library(sfarrow)
 options(scipen = 999)
+
+
+#  Recommended log 10 and share functions ---------------------------------
+
+log_10 <- function(x) {
+  x = replace_na(na_if(na_if(na_if(log10(x), NaN), Inf), -Inf), 0)
+  x = ifelse(x < 1, 1, x)
+  return(x)
+}
+
+share <- function(x) {
+  x = replace_na(na_if(na_if(na_if(x / sum(x), NaN), Inf), -Inf), 0)
+  return(x)
+}
 
 # Aggregation function ----------------------------------------------------
 
