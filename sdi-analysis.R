@@ -2,6 +2,7 @@
 library(tidyverse)
 library(dplyr)
 library(sf)
+library(Hmisc)
 library(arrow)
 library(sfarrow)
 library(geohashTools)
@@ -9,6 +10,7 @@ library(scales)
 #library(nngeo)
 library(lwgeom)
 library(patchwork)
+library(boot)
 
 options(scipen = 99999)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -34,7 +36,7 @@ sum_cols = c("k_complexity_weighted_landscan_un", "k_complexity_weighted_worldpo
 divide_cols = list('k_complexity_weighted_landscan_un' = c('k_complexity_weighted_landscan_un','landscan_population_un'),
                    'k_complexity_weighted_worldpop_un' = c('k_complexity_weighted_worldpop_un','worldpop_population_un'))
 
-transform_cols = c('landscan_population_un', 'worldpop_population_un')
+transform_cols = c("k_complexity_weighted_landscan_un", 'landscan_population_un', 'worldpop_population_un')
 
 df_k <- generate_crosstabs(data =  df_combined %>% mutate(total = 'Total'), 
                            group_by_cols = c("urban_id", "urban_center_name", "class_urban_hierarchy"),
@@ -44,6 +46,20 @@ df_k <- generate_crosstabs(data =  df_combined %>% mutate(total = 'Total'),
                            group_by_agg_cols_list = list('urban' = "urban_id"),
                            group_by_agg_func_list = list(sum = sum, share = share),
                            agg_cols = c('landscan_population_un', 'worldpop_population_un'))
+
+df_k_sdmad <- df_combined %>%
+  mutate(
+    random_jitter = runif(n = nrow(.), min = 0, max = .01),
+    k_complexity_jitter = k_complexity + random_jitter
+  ) %>%
+  group_by(urban_id) %>% 
+  summarise(k_complexity_sd = Hmisc::wtd.var(x = k_complexity, weights = landscan_population_un, na.rm=TRUE),
+            k_complexity_mad = matrixStats::weightedMad(x = k_complexity_jitter, w = landscan_population_un,  na.rm = TRUE)
+            ) %>%
+  ungroup()
+
+df_k <- df_k %>%
+  left_join(., df_k_sdmad, by = c('urban_id'='urban_id'))
 
 df_k_total <- generate_crosstabs(data =  df_combined, 
                            group_by_cols = c("area_type"),
@@ -253,7 +269,6 @@ sdi_profiles <- sdi_profiles %>%
          enviro_dangers = case_when((section_d__d2_location_dangerous == 'yes' | section_d__d4_natural_disasters__fires == 'True' | section_d__d4_natural_disasters__floods == 'True') ~ 1, TRUE ~ 0),
          count_enviro = case_when((section_d__d2_location_dangerous %in% c('yes','no') | section_d__d4_natural_disasters__fires %in% c('True','False') | section_d__d4_natural_disasters__floods %in% c('True','False')) ~ 1, TRUE ~ 0))
 
-
 # Collapse to settlement IDs ---------------------------------------------
 
 sdi_services2 <- sdi_services %>%
@@ -262,7 +277,7 @@ sdi_services2 <- sdi_services %>%
   filter(!is.na(ISO_A3)) %>%
   st_drop_geometry() %>%
   mutate(count_services = 1) %>%
-  group_by(L2, id.y, settlement_name_municipality, settlement_name_community, municipality, city, province, country, ISO_A3, NAME_EN) %>%
+  group_by(id.y) %>%
   summarize_at(vars(count_services, water_service, toilet_type_nonpiped, water_service_broken, water_service_notsafe, water_service_broken_notsafe), list(sum)) %>%
   ungroup() 
 
@@ -276,7 +291,7 @@ sdi_profiles2 <- sdi_profiles %>%
   mutate(count_profile_responses = 1,
          opendefecation_population = settlement_population*(section_g__g5_opendefecation_percentage/100),
          bucketsystem_population = settlement_population*(section_g__g6_bucketsystem_percentage/100) ) %>%
-  group_by(L2, id.y, settlement_name_municipality, settlement_name_community, municipality, city, province, country, ISO_A3, NAME_EN) %>%
+  group_by(id.y) %>%
   summarize_at(vars(count_profile_responses, residential_structures, settlement_population,
                     opendefecation_population, bucketsystem_population, 
                     poor_sanitation, count_sanitation, location_problems, count_location, eviction_risk, count_eviction, status_undeclared_illegal, count_status, no_sewerline, count_sewerline, water_unsafe, count_water, enviro_dangers, count_enviro), list(sum)) %>%
@@ -288,6 +303,7 @@ area_data <- arrow::open_dataset('data/africa_data.parquet') %>%
   select(block_id, block_geohash, block_area_m2, building_area_m2, building_count, average_building_area_m2, building_to_block_area_ratio, k_complexity, landscan_population_un, worldpop_population_un, country_code, country_name, class_urban_hierarchy, urban_id, urban_center_name, urban_country_code, urban_country_name) %>%
   collect()
 
+# sdi_boundaries_overlay.parquet is generated with Python code above
 sdi_areas <- st_read_parquet('data/sdi-analysis/data/sdi_boundaries_overlay.parquet') %>%
   st_set_crs(sf::st_crs(4326)) %>%
   st_transform(3395) %>%
@@ -316,7 +332,8 @@ sdi_areas2 <- sdi_areas %>%
          landscan_population_un_allocated = landscan_population_un * block_area_share, 
          worldpop_population_un_allocated = worldpop_population_un * block_area_share, 
          k_complexity_wt = landscan_population_un_allocated * k_complexity) %>%
-  group_by(L2, id, settlement_name_municipality, settlement_name_community, municipality, city, province, country, ISO_A3, NAME_EN) %>%
+  # settlement_name_municipality, settlement_name_community, municipality, city, province, country, ISO_A3, NAME_EN
+  group_by(id) %>%
   summarize_at(vars(k_complexity_wt, landscan_population_un_allocated, worldpop_population_un_allocated, sdi_area, sdi_area_km2), list(sum), na.rm = TRUE) %>%
   ungroup() %>%
   mutate(k_complexity_avg = k_complexity_wt/landscan_population_un_allocated) %>%
@@ -376,51 +393,96 @@ sdi_areas3 <- sdi_areas2 %>%
          all_services_share_avg_rank = row_number(desc(all_services_share_avg))
          ) %>%
   ungroup() %>%
-  filter(all_services_perkm2_avg_rank <= 50) 
+  filter(all_services_perkm2_avg_rank <= 50 ) # | water_services_perkm2_avg_rank <= 50) 
 
 # Check the distributions -------------------------------------------------
 
 # Examine urban averages --------------------------------------------------
 
+df_kmad <- sdi_areas3 %>%
+  st_drop_geometry() %>%
+  mutate(n = ceiling(round(landscan_population_un_allocated/10,0))) %>%
+  select(id, urban_id, n, k_complexity_avg) %>%
+  uncount(weights = n) %>%
+  mutate(
+    random_jitter = runif(n = nrow(.), min = 0, max = .01),
+    k_complexity_avg = k_complexity_avg + random_jitter
+  ) %>% 
+  group_by(urban_id) %>%
+  summarise(k_settlement_mad2 = mad(k_complexity_avg)) %>%
+  ungroup() %>%
+  select(urban_id, k_settlement_mad2)
+  
 urban_distribution <- sdi_areas3 %>%
+  st_drop_geometry() %>%
+  mutate(
+    random_jitter = runif(n = nrow(.), min = 0, max = .01),
+    k_complexity_avg_jitter = k_complexity_avg + random_jitter
+  ) %>%
   group_by(urban_id, urban_center_name, urban_country_name) %>%
-  summarize_at(vars(sdi_area_km2, settlement_count, k_complexity_wt, landscan_population_un_allocated), list(sum), na.rm = TRUE) %>%
+  summarise(sdi_area_km2 = sum(sdi_area_km2),
+            settlement_count = sum(settlement_count),
+            k_settlement_sd = Hmisc::wtd.var(x = k_complexity_avg, weights = landscan_population_un_allocated, na.rm=TRUE), 
+            k_complexity_wt = sum(k_complexity_wt),
+            k_settlement_mad = matrixStats::weightedMad(x = k_complexity_avg_jitter, w = landscan_population_un_allocated,  na.rm = TRUE), 
+            landscan_population_un_allocated = sum(landscan_population_un_allocated),
+            .groups = 'keep'
+            ) %>%
   ungroup() %>%
   mutate(k_complexity_avg = k_complexity_wt/landscan_population_un_allocated,
-         sdi_area_km2 = sdi_area_km2/settlement_count) %>%
-  arrange(desc(k_complexity_avg )) %>%
-  left_join(., df_k %>%
-              select(urban_id, class_urban_hierarchy, k_complexity_weighted_landscan_un,landscan_population_un), 
+         sdi_area_km2 = sdi_area_km2/settlement_count,
+         k_settlement_sd = sqrt(k_settlement_sd),
+         k_settlement_mad = case_when(k_settlement_mad < 1 ~ 1, TRUE ~ k_settlement_mad)
+         ) %>%
+  left_join(., df_kmad, by = c('urban_id'='urban_id')) %>%
+  arrange(desc(k_complexity_avg)) %>%
+  left_join(., df_k %>% select(urban_id, class_urban_hierarchy, k_complexity_weighted_landscan_un, landscan_population_un, k_complexity_sd, k_complexity_mad),  #  
             by = c('urban_id' = 'urban_id')) %>%
   filter(landscan_population_un >= 1000000 & class_urban_hierarchy %in% c('1 - Core urban', '2 - Peripheral urban')) %>%
   filter(landscan_population_un_allocated >= 1000) %>%
-  mutate(k_complexity_diff = k_complexity_avg -  k_complexity_weighted_landscan_un,
-         share_of_pop = landscan_population_un_allocated/landscan_population_un) %>%
-  select(urban_id, urban_center_name, urban_country_name, sdi_area_km2, settlement_count, landscan_population_un_allocated, k_complexity_avg, k_complexity_weighted_landscan_un) %>%
+  mutate(share_of_pop = landscan_population_un_allocated/landscan_population_un) %>%
+  select(urban_id, urban_center_name, urban_country_name, 
+         sdi_area_km2, settlement_count, share_of_pop, 
+         landscan_population_un_allocated, landscan_population_un, share_of_pop, 
+         k_complexity_avg, k_complexity_weighted_landscan_un, 
+         k_settlement_sd, k_settlement_mad, k_settlement_mad2, k_complexity_sd, k_complexity_mad) %>%
   pivot_longer(cols = c(k_complexity_avg, k_complexity_weighted_landscan_un)) %>%
   mutate(name = case_when(name == 'k_complexity_avg' ~ "SDI settlements",
                           name == 'k_complexity_weighted_landscan_un' ~ 'Urban areas')) %>%
   mutate(urban_label = paste0(urban_center_name, ', ', urban_country_name)) %>%
   mutate(urban_label = factor(urban_label, levels = rev(c('Port Harcourt, Nigeria', 'Cotonou, Benin', 'Lagos, Nigeria', 'Freetown, Sierra Leone', 'Monrovia, Liberia', 'Durban, South Africa', 'Dar es Salaam, Tanzania', 'Kampala, Uganda', 'Accra, Ghana')))) %>%
-  mutate(name = factor(name, levels = c('Urban areas',"SDI settlements")))
+  mutate(name = factor(name, levels = c('Urban areas',"SDI settlements"))) %>%
+  mutate(k_mad = case_when(name == 'SDI settlements' ~ k_settlement_mad,
+                           name == 'Urban areas' ~ k_complexity_mad),
+         k_sd = case_when(name == 'SDI settlements' ~ k_settlement_sd,
+                          name == 'Urban areas' ~ k_complexity_sd),
+         population = case_when(name == 'SDI settlements' ~ landscan_population_un_allocated,
+                                name == 'Urban areas' ~ landscan_population_un)
+         ) %>%
+  select(urban_id, urban_label, name, sdi_area_km2, settlement_count, value, k_mad, k_sd, population, share_of_pop) 
 
-(bar_sdi <- ggplot() +
-    geom_bar(data = urban_distribution, aes(y = urban_label, x = value, group = name,
-                                        fill = name), color = 'white', linewidth = .3, 
-             stat="identity", position = 'dodge') + 
-    labs(x= 'Block complexity average', y = 'Urban area', fill = '', color =  '', subtitle = '') +
-    scale_fill_manual(values = c('#4D96FF','#FF6B6B')) +
-    # labs(subtitle = 'Validating block complexity with known settlements') +
-    theme_classic() +
-    theme(legend.position = 'bottom',
-          plot.subtitle = element_text(size = 12, hjust=.5, face = 'bold', color ='#333333'),
-          axis.ticks = element_blank(), 
-          axis.text = element_text(color = '#333333', size = 11),
-          axis.title = element_text(color = '#333333', size = 11, face = 'bold'),
-          legend.text = element_text(color = '#333333', size = 11)
-    ) )
+caption_note <- urban_distribution %>% 
+  filter(name == 'Urban areas') %>% 
+  mutate(caption_label = 
+           paste0(urban_label, ' (', settlement_count,' settlements accounting for ', round(share_of_pop*100,3), '% of ', comma(round(population/1000000,2)),'M urban population)')) %>%
+  select(urban_id, caption_label)
 
-
+(bar_sdi <- ggplot(urban_distribution, aes(x=urban_label, y=value, fill=name)) + 
+  geom_bar(stat="identity", color="black", linewidth = .3, 
+           position=position_dodge()) +
+  geom_errorbar(aes(ymin= value - k_mad , ymax= value + k_mad ), width=.2,
+                position=position_dodge(.9)) +
+  coord_flip() + 
+  labs(y= 'Block complexity average\nwith mean absolute deviation', x = 'Urban area', fill = '', color =  '', subtitle = '') +
+  scale_y_continuous(expand = c(0,0), limits = c(0, 18)) +
+  scale_fill_manual(values = c('#4D96FF','#FF6B6B')) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        plot.subtitle = element_text(size = 12, hjust=.5, face = 'bold', color ='#333333'),
+        axis.ticks = element_blank(), 
+        axis.text = element_text(color = '#333333', size = 11),
+        axis.title = element_text(color = '#333333', size = 11, face = 'bold'),
+        legend.text = element_text(color = '#333333', size = 11)))
 
 # Examine total averages --------------------------------------------------
 
@@ -449,11 +511,11 @@ k_distribution <- rbind(sdi_areas3 %>%
 #grey2 <- c('#414141','#777777')
 #colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC556','#F9F871'))(length(k_distribution$k)-2)
 
-(histogram_sdi <- ggplot() +
-    geom_bar(data = k_distribution, aes(y = k, x = k_share, group = group,
-                                               fill = group), color = 'white', linewidth = .3, 
-             stat="identity", position = 'dodge') + 
-    coord_flip() +
+(histogram_sdi <- ggplot(data = k_distribution, aes(y = k, x = k_share, group = group,
+                                                    fill = group)) +
+    geom_bar(color = 'black', linewidth = .3, 
+             stat="identity", position = position_dodge()) + 
+    coord_flip()+
     labs(y= 'Block complexity', x = 'Population share', fill = '', color =  '', subtitle = '') +
     scale_x_continuous(expand = c(0,0), labels = label_percent())+ 
     scale_fill_manual(values = c('#4D96FF','#FF6B6B')) +
@@ -468,14 +530,17 @@ k_distribution <- rbind(sdi_areas3 %>%
     ) ) 
 
 
-(sdi_validation <- bar_sdi + histogram_sdi + plot_layout(guides = 'collect') & theme(legend.position = 'bottom')
-  & plot_annotation(tag_levels = list(c("A","B"))) 
+annotation_bottom = paste0('Notes: The sample size of SDI settlements: ', paste(unlist(caption_note$caption_label), collapse ="; "), '.')
+
+(sdi_validation <- bar_sdi + histogram_sdi + plot_layout(guides = 'collect') 
+  & plot_annotation(tag_levels = list(c("A","B")),
+                    caption = str_wrap(annotation_bottom, 210)
+                    )
+  & theme(legend.position = 'bottom',
+          plot.caption = element_text(hjust = 0))
   )
 
 
 ggsave(plot = sdi_validation, 
        filename = 'data/sdi-analysis/viz/sdi_validation_barcharts.pdf', width = 12.4, height = 5.64)
-
-urban_distribution %>%
-  select(urban_label, settlement_count) %>% distinct()
 
