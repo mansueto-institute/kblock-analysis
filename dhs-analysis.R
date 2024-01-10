@@ -6,6 +6,7 @@ library(scales)
 library(sf)
 library(rmapshaper)
 library(patchwork)
+library(ggrepel)
 library(arrow)
 library(sfarrow)
 library(readxl)
@@ -39,7 +40,7 @@ load_saved = TRUE
 
 # RData file
 if (load_saved == TRUE) {
-  load("data/dhs_data.RData")
+  load(paste0(wd_path,"/data/dhs_data.RData"))
   # Requires authorization from DHS: https://uchicago.box.com/s/anw4fxc376dgtgol9tt87tuozipnk0kj
   
 } else {
@@ -55,10 +56,10 @@ if (load_saved == TRUE) {
 # Load staging files
 # Box.com link with access to staging files:
 # https://uchicago.box.com/s/anw4fxc376dgtgol9tt87tuozipnk0kj
-# subnat_indicators <- read_csv(paste0(wd_path,'/dhs_download.csv'))
-# subnat_all <- st_read(paste0(wd_path,'/dhs_geographies.geojson'))
-# subnat_all_wide <- st_read(paste0(wd_path,'/dhs_all_wide.geojson'))
-# subnat_to_blocks <- read_parquet(paste0(wd_path,'/blocks_to_dhs.parquet'))
+# subnat_indicators <- read_csv(paste0(wd_path,'/data/dhs_download.csv'))
+# subnat_all <- st_read(paste0(wd_path,'/data/dhs_geographies.geojson'))
+# subnat_all_wide <- st_read(paste0(wd_path,'/data/dhs_all_wide.geojson'))
+subnat_to_blocks <- read_parquet(paste0(wd_path,'/data/blocks_to_dhs.parquet'))
 
 # CHANGE TO DHS USER LOGIN CREDENTIAL
 # Follow instructions here: # https://docs.ropensci.org/rdhs/articles/introduction.html
@@ -258,7 +259,7 @@ if (load_saved == FALSE) {
       #   st_make_valid() %>% mutate(is_valid = st_is_valid(geometry)) %>%
       #   filter(is_valid == TRUE) %>% select(-any_of('is_valid'))
       
-      iso_blocks <- arrow::open_dataset(paste0(wd_input,'/africa_geodata.parquet')) %>% 
+      iso_blocks <- arrow::open_dataset(paste0('data/africa_geodata.parquet')) %>% 
         select(block_id, gadm_code, country_code, geometry) %>%
         filter(country_code %in% c(country_iso)) %>% 
         read_sf_dataset() %>%
@@ -412,7 +413,7 @@ if (load_saved == FALSE) {
   un_slums_k <- un_slums %>%
     left_join(., urban_k, by = c('country_code'='country_code'))
   
-  city_k <- read_parquet(paste0(wd_input,'/africa_data.parquet')) %>%
+  city_k <- read_parquet(paste0('data/africa_data.parquet')) %>%
     mutate(population_k_1 = case_when(k_labels == '1' ~ landscan_population_un, TRUE ~ as.numeric(0)),
            population_k_2 = case_when(k_labels == '2' ~ landscan_population_un, TRUE ~ as.numeric(0)),
            population_k_3 = case_when(k_labels == '3' ~ landscan_population_un, TRUE ~ as.numeric(0)),
@@ -1477,7 +1478,7 @@ k_country <- read_parquet(paste0('data/africa_data.parquet')) %>%
   ungroup() %>%
   mutate(k_complexity_wt = k_complexity_wt/landscan_population_un)
 
-street_validation <- read_csv('data/streets_external_validation.csv') %>%
+street_validation <- read_csv('data/streets_validation.csv') %>%
   mutate(osm_cia_ratio = osm_total_streets_km / cia_roadways_km,
          osm_ecopia_ratio = osm_total_streets_km / ecopia_ml_roads_km,
          osm_irf_ratio = osm_total_streets_km / irf_all_roads_km,
@@ -1764,7 +1765,7 @@ k_thresh_corr <- k_levels_vs_pc1 %>%
     geom_line(group = 1) + 
     scale_y_continuous(expand = c(0,0), limits = c(-.75,.7)) + 
     scale_size_continuous( labels = label_percent(), name = 'Share of population') +
-    labs(subtitle = 'Block complexity correlation with PC1 begins to slightly weaken\nwhen k = 15+ and for off-network blocks across DHS regions',
+    labs(#subtitle = 'Block complexity correlation with PC1 begins to slightly weaken\nwhen k = 15+ and for off-network blocks across DHS regions',
          y = 'Spearman correlation with PC1 at each block complexity level', x = 'Population share at each block complexity level correlated with PC1') + 
     theme_classic() +
     theme(plot.subtitle = element_text(hjust = .5),
@@ -1847,7 +1848,7 @@ k_15_ratios <- street_validation %>%
     #geom_text(x = 4, y = log10(15), label = 'OSM reports more vehicular roadway than CIA') +
     #scale_x_continuous(labels = scales::percent, breaks = c(0, .05, .1, .15, .2, .25, .3)) +
     scale_y_continuous(breaks = c( log10(.5), log10(1), log10(10), log10(100)), labels = c( .5, 1, 10, 100)) +
-    labs(subtitle = 'South Sudan and Eritrea have relatively high block complexity\nand report less roadway in OSM than the CIA World Factbook',
+    labs(#subtitle = 'South Sudan and Eritrea have relatively high block complexity\nand report less roadway in OSM than the CIA World Factbook',
          #x = "Ratio of population share in k = 15+ / off-network blocks to non-urban population share",
          x = "Average block complexity (weighted to population)",
          y = "OSM completeness\n(ratio of OSM vehicular street distance to CIA roadway distance)") +
@@ -1855,8 +1856,9 @@ k_15_ratios <- street_validation %>%
     theme(legend.position = 'none', 
           plot.subtitle = element_text(hjust = .5)))
 
+line_correl_k_thresh  + scatter_15plus_outliers
 (k_thresh_charts <- line_correl_k_thresh  + scatter_15plus_outliers & 
-  plot_layout(ncol = 2) &
+  #plot_layout(ncol = 2) &
   plot_annotation(tag_levels = list(c("A", "B"))) & 
   theme(plot.tag = element_text(size = 13)))
 

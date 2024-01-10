@@ -47,16 +47,22 @@ df_k <- generate_crosstabs(data =  df_combined %>% mutate(total = 'Total'),
                            group_by_agg_func_list = list(sum = sum, share = share),
                            agg_cols = c('landscan_population_un', 'worldpop_population_un'))
 
+urban0s <- df_k %>% filter(landscan_population_un == 0) %>% select(urban_id) %>% pull()
+
 df_k_sdmad <- df_combined %>%
+  filter(!(urban_id %in% urban0s )) %>%
   mutate(
     random_jitter = runif(n = nrow(.), min = 0, max = .01),
     k_complexity_jitter = k_complexity + random_jitter
   ) %>%
   group_by(urban_id) %>% 
   summarise(k_complexity_sd = Hmisc::wtd.var(x = k_complexity, weights = landscan_population_un, na.rm=TRUE),
-            k_complexity_mad = matrixStats::weightedMad(x = k_complexity_jitter, w = landscan_population_un,  na.rm = TRUE)
+            k_complexity_mad = matrixStats::weightedMad(x = k_complexity_jitter, w = landscan_population_un,  na.rm = TRUE),
+            k_complexity_75 = Hmisc::wtd.quantile(x = k_complexity, weights = landscan_population_un, probs= .75, na.rm=FALSE),
+            k_complexity_25 = Hmisc::wtd.quantile(x = k_complexity, weights = landscan_population_un, probs= .25, na.rm=FALSE)
             ) %>%
   ungroup()
+
 
 df_k <- df_k %>%
   left_join(., df_k_sdmad, by = c('urban_id'='urban_id'))
@@ -308,7 +314,8 @@ sdi_areas <- st_read_parquet('data/sdi-analysis/data/sdi_boundaries_overlay.parq
   st_set_crs(sf::st_crs(4326)) %>%
   st_transform(3395) %>%
   mutate(sdi_area = as.numeric(st_area(.))) %>%
-  left_join(., area_data, by = c('block_id' = 'block_id'))
+  left_join(., area_data, by = c('block_id' = 'block_id')) %>%
+  st_transform(4326)
 
 # aggregate population by ID and area share
 sdi_urban_rank <- sdi_areas %>%
@@ -397,7 +404,7 @@ sdi_areas3 <- sdi_areas2 %>%
 
 # Check the distributions -------------------------------------------------
 
-# Examine urban averages --------------------------------------------------
+# Generate urban averages --------------------------------------------------
 
 df_kmad <- sdi_areas3 %>%
   st_drop_geometry() %>%
@@ -424,6 +431,10 @@ urban_distribution <- sdi_areas3 %>%
             settlement_count = sum(settlement_count),
             k_settlement_sd = Hmisc::wtd.var(x = k_complexity_avg, weights = landscan_population_un_allocated, na.rm=TRUE), 
             k_complexity_wt = sum(k_complexity_wt),
+            k_settlement_min = min(k_complexity_avg),
+            k_settlement_max = max(k_complexity_avg),
+            k_settlement_75 = Hmisc::wtd.quantile(x = k_complexity_avg, weights = landscan_population_un_allocated, probs= .9, na.rm=TRUE),
+            k_settlement_25 = Hmisc::wtd.quantile(x = k_complexity_avg, weights = landscan_population_un_allocated, probs= .1, na.rm=TRUE),
             k_settlement_mad = matrixStats::weightedMad(x = k_complexity_avg_jitter, w = landscan_population_un_allocated,  na.rm = TRUE), 
             landscan_population_un_allocated = sum(landscan_population_un_allocated),
             .groups = 'keep'
@@ -436,7 +447,7 @@ urban_distribution <- sdi_areas3 %>%
          ) %>%
   left_join(., df_kmad, by = c('urban_id'='urban_id')) %>%
   arrange(desc(k_complexity_avg)) %>%
-  left_join(., df_k %>% select(urban_id, class_urban_hierarchy, k_complexity_weighted_landscan_un, landscan_population_un, k_complexity_sd, k_complexity_mad),  #  
+  left_join(., df_k %>% select(urban_id, class_urban_hierarchy, k_complexity_weighted_landscan_un, landscan_population_un, k_complexity_sd, k_complexity_mad, k_complexity_75, k_complexity_25),  #  
             by = c('urban_id' = 'urban_id')) %>%
   filter(landscan_population_un >= 1000000 & class_urban_hierarchy %in% c('1 - Core urban', '2 - Peripheral urban')) %>%
   filter(landscan_population_un_allocated >= 1000) %>%
@@ -445,7 +456,8 @@ urban_distribution <- sdi_areas3 %>%
          sdi_area_km2, settlement_count, share_of_pop, 
          landscan_population_un_allocated, landscan_population_un, share_of_pop, 
          k_complexity_avg, k_complexity_weighted_landscan_un, 
-         k_settlement_sd, k_settlement_mad, k_settlement_mad2, k_complexity_sd, k_complexity_mad) %>%
+         k_settlement_sd, k_settlement_mad, k_settlement_75, k_settlement_25, k_settlement_min, k_settlement_max,
+         k_complexity_sd, k_complexity_mad, k_complexity_75, k_complexity_25) %>%
   pivot_longer(cols = c(k_complexity_avg, k_complexity_weighted_landscan_un)) %>%
   mutate(name = case_when(name == 'k_complexity_avg' ~ "SDI settlements",
                           name == 'k_complexity_weighted_landscan_un' ~ 'Urban areas')) %>%
@@ -456,10 +468,16 @@ urban_distribution <- sdi_areas3 %>%
                            name == 'Urban areas' ~ k_complexity_mad),
          k_sd = case_when(name == 'SDI settlements' ~ k_settlement_sd,
                           name == 'Urban areas' ~ k_complexity_sd),
+         k_75 = case_when(name == 'SDI settlements' ~ k_settlement_75, 
+                          name == 'Urban areas' ~ k_complexity_75),
+         k_25 = case_when(name == 'SDI settlements' ~ k_settlement_25,
+                          name == 'Urban areas' ~ k_complexity_25),
          population = case_when(name == 'SDI settlements' ~ landscan_population_un_allocated,
                                 name == 'Urban areas' ~ landscan_population_un)
          ) %>%
-  select(urban_id, urban_label, name, sdi_area_km2, settlement_count, value, k_mad, k_sd, population, share_of_pop) 
+  select(urban_id, urban_label, name, sdi_area_km2, settlement_count, value, k_mad, k_sd, k_75, k_25, population, share_of_pop, k_settlement_min, k_settlement_max) %>%
+  mutate(k_settlement_min = case_when(name == 'Urban areas'  ~ NA, TRUE ~ k_settlement_min),
+         k_settlement_max = case_when(name == 'Urban areas'  ~ NA, TRUE ~ k_settlement_max))
 
 caption_note <- urban_distribution %>% 
   filter(name == 'Urban areas') %>% 
@@ -468,23 +486,26 @@ caption_note <- urban_distribution %>%
   select(urban_id, caption_label)
 
 (bar_sdi <- ggplot(urban_distribution, aes(x=urban_label, y=value, fill=name)) + 
-  geom_bar(stat="identity", color="black", linewidth = .3, 
-           position=position_dodge()) +
-  geom_errorbar(aes(ymin= value - k_mad , ymax= value + k_mad ), width=.2,
-                position=position_dodge(.9)) +
+    geom_bar(stat="identity", color="black", linewidth = .3, 
+             position=position_dodge()) +
+    geom_errorbar(aes(ymin= k_settlement_min, ymax= k_settlement_max), width=.2, alpha = 1, color = '#ffdf00', 
+                  position=position_dodge(.9)) +
+    geom_errorbar(aes(ymin= k_25 , ymax= k_75 ), width=.2,
+                  position=position_dodge(.9)) +
   coord_flip() + 
-  labs(y= 'Block complexity average\nwith mean absolute deviation', x = 'Urban area', fill = '', color =  '', subtitle = '') +
-  scale_y_continuous(expand = c(0,0), limits = c(0, 18)) +
-  scale_fill_manual(values = c('#4D96FF','#FF6B6B')) +
-  theme_classic() +
-  theme(legend.position = 'bottom',
-        plot.subtitle = element_text(size = 12, hjust=.5, face = 'bold', color ='#333333'),
-        axis.ticks = element_blank(), 
-        axis.text = element_text(color = '#333333', size = 11),
-        axis.title = element_text(color = '#333333', size = 11, face = 'bold'),
-        legend.text = element_text(color = '#333333', size = 11)))
+    labs(y= 'Block complexity population weighted average', x = 'Urban area', fill = '', color =  '', subtitle = '') +
+    scale_y_continuous(expand = c(0,0), limits = c(0, 19), oob=scales::squish) +
+    scale_fill_manual(values = c('#4D96FF','#FF6B6B')) +
+    theme_classic() +
+    theme(legend.position = 'bottom',
+          plot.subtitle = element_text(size = 12, hjust=.5, face = 'bold', color ='#333333'),
+          axis.ticks = element_blank(), 
+          axis.text = element_text(color = '#333333', size = 11),
+          axis.title = element_text(color = '#333333', size = 11, face = 'bold'),
+          legend.text = element_text(color = '#333333', size = 11)))
 
-# Examine total averages --------------------------------------------------
+
+# Generate total distribution ---------------------------------------------
 
 k_distribution <- rbind(sdi_areas3 %>%
   filter(!is.na(k_label_10)) %>%
@@ -529,18 +550,76 @@ k_distribution <- rbind(sdi_areas3 %>%
           legend.text = element_text(color = '#333333', size = 11)
     ) ) 
 
+annotation_bottom = paste0('Notes: For Figure A on left the upper / lower quartile are in black and min / max are in yellow (only for SDI samples). The sample size of SDI settlements: ', paste(unlist(caption_note$caption_label), collapse ="; "), '.')
 
-annotation_bottom = paste0('Notes: The sample size of SDI settlements: ', paste(unlist(caption_note$caption_label), collapse ="; "), '.')
-
+print(annotation_bottom)
 (sdi_validation <- bar_sdi + histogram_sdi + plot_layout(guides = 'collect') 
-  & plot_annotation(tag_levels = list(c("A","B")),
-                    caption = str_wrap(annotation_bottom, 210)
+  & plot_annotation(tag_levels = list(c("A","B"))
+                    #,caption = str_wrap(annotation_bottom, 203)
                     )
   & theme(legend.position = 'bottom',
           plot.caption = element_text(hjust = 0))
   )
 
-
 ggsave(plot = sdi_validation, 
-       filename = 'data/sdi-analysis/viz/sdi_validation_barcharts.pdf', width = 12.4, height = 5.64)
+       filename = 'data/sdi-analysis/viz/sdi_validation_barcharts.pdf', width = 12, height = 5.64)
+
+# Example map -------------------------------------------------------------
+
+freetown <- sdi_areas %>%
+  filter(urban_id %in% c('ghsl_1507')) %>% 
+  mutate(k_label = case_when(round(k_complexity,0) >= 10  ~ "10+", 
+                             TRUE ~ as.character(round(k_complexity,0)))) %>%
+  mutate(k_label = factor(k_label , levels = c('1','2','3','4','5','6','7','8','9','10+'))) 
+  
+sle_boundaries <- sdi_boundaries_valid %>%
+  filter(ISO_A3 == 'SLE') %>%
+  st_join(., freetown %>% select(geometry), left = FALSE)
+
+freetown_blocks <- st_read_parquet('data/sdi-analysis/freetown_blocks.parquet') %>%
+  st_set_crs(sf::st_crs(4326))  %>% 
+  mutate(k_10 = case_when(round(k_complexity,0) >= 10  ~ "10+", 
+                             TRUE ~ as.character(round(k_complexity,0)))) %>%
+  mutate(k_10 = factor(k_10 , levels = c('1','2','3','4','5','6','7','8','9','10+'))) 
+
+grey2 <- c('#414141','#777777')
+colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC556','#F9F871'))(10-2)
+
+
+
+
+freetown_map <- ((ggplot() + 
+  geom_sf(data = freetown_blocks %>%
+            st_crop(x = ., y = sle_boundaries), linewidth = .1, alpha = .5) +
+    geom_sf(data = sle_boundaries, color = '#4B4453', alpha = 0, linewidth = .5) + 
+  geom_sf(data = freetown, aes(fill = k_label)) + 
+  scale_fill_manual(name = '', values = c(grey2, colorhexes)) + 
+  theme_void() + 
+  theme(legend.position ='none', plot.margin=unit(c(t=0,r=0,b=0,l=0), "pt")) ) +
+(ggplot() + 
+    geom_sf(data = freetown_blocks %>%
+              st_crop(x = ., y = sle_boundaries), aes(fill = k_10), color = 'white', linewidth = .1) +
+    geom_sf(data = sle_boundaries, color = '#4B4453', linewidth = .5) + 
+    scale_fill_manual(name = '', values = c(grey2, colorhexes)) + 
+    theme_void() +
+    theme(plot.margin=unit(c(t=0,r=0,b=40,l=0), "pt")) ) &
+  plot_annotation(tag_levels = list(c("A","B"))))
+   
+  
+ggsave(plot = freetown_map , 
+       filename = 'data/sdi-analysis/viz/freetown_map.pdf', width = 14, height = 4)
+
+
+
+
+  
+
+  
+  
+  
+  
+  
+
+
+
 

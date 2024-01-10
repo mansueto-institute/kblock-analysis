@@ -11,9 +11,7 @@ library(readxl)
 library(readr)
 library(writexl)
 library(units)
-library(ggsn)
 library(arrow)
-#library(geoarrow)
 library(sfarrow)
 library(osmdata)
 library(viridis)
@@ -22,6 +20,9 @@ library(ggrepel)
 library(DescTools)
 options(scipen = 9999)
 options(lifecycle_verbosity = "warning")
+
+library(ggsn)
+# devtools::install_github('mansueto-institute/ggsn') # fork of 'oswaldosantos/ggsn'
 
 # Load aggregation function
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -133,17 +134,6 @@ write_xlsx(list('dictionary_labels' = file_labels, 'dictionary_levels' = file_gr
 
 
 # Aggregation arguments ---------------------------------------------------
-
-log_10 <- function(x) {
-  x = replace_na(na_if(na_if(na_if(log10(x), NaN), Inf), -Inf), 0)
-  x = ifelse(x < 1, 1, x)
-  return(x)
-}
-
-share <- function(x) {
-  x = replace_na(na_if(na_if(na_if(x / sum(x), NaN), Inf), -Inf), 0)
-  return(x)
-}
 
 sum_cols = c("k_complexity_weighted_landscan_un", "k_complexity_weighted_worldpop_un", 
              "block_count", "block_area_m2", "block_hectares", "block_area_km2", "block_perimeter_meters", "building_area_m2", 
@@ -1045,11 +1035,13 @@ if (!file.exists(paste0("data/africa_geodata.parquet"))) {
   print('africa_geodata.parquet already downloaded.')
 }
 
-area_data <- arrow::open_dataset(paste0('data/africa_geodata.parquet')) %>% 
+#area_data <- arrow::open_dataset(paste0('data/africa_geodata.parquet')) %>% 
+area_data <- arrow::open_dataset('data/lusaka_blocks.parquet') %>%
   filter(urban_id %in% c('ghsl_3798','periurban_925')) %>% 
   read_sf_dataset() %>%
   st_set_crs(4326) %>%
   st_make_valid()
+
 
 # Zoom map ----------------------------------------------------------------
 
@@ -1109,8 +1101,8 @@ area_data_framed <- area_data %>%
     theme_void() + inset_element(zoom_inset, left = -.5, bottom = .12, right = 1, top = .55, align_to = 'full')
   )
 
-df_combined_prep %>% group_by(country_code, country_name) %>%
-  tally() %>% print(n = 100)
+#df_combined_prep %>% group_by(country_code, country_name) %>%
+#  tally() %>% print(n = 100)
 
 # buildings <- arrow::open_dataset('buildings_polygons_ZMB.parquet')) %>%
 #   filter(gadm_code %in% unique(area_data_framed$gadm_code))%>% 
@@ -1162,7 +1154,7 @@ colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC55
             fill = 'white', alpha = 0, linewidth = 1.7) +
     geom_sf(data = sites %>% filter(place == place_var), color = '#434343', 
             fill = '#434343', alpha = 0, linewidth = .5) +
-    scale_fill_manual(expand = c(0,0), values = c(grey2, colorhexes), name = 'Block complexity') + 
+    scale_fill_manual(expand = c(0,0), values = c(grey2, colorhexes), name = 'Block\ncomplexity') + 
     theme_void() + theme(text = element_text(color = "#333333"),
                          legend.position = 'none',
                          legend.spacing.x = unit(1, 'pt'),
@@ -1176,10 +1168,10 @@ colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC55
                          legend.title = element_blank(),
                          plot.caption = element_text(size = 11, hjust = .5, vjust = 5), #margin=margin(0,0,0,0)),
                          axis.text = element_blank()) +
-    ggsn::scalebar(y.min = st_bbox(area_data_framed)$ymin - (height_decdegs*.03), 
-                   x.min = st_bbox(area_data_framed)$xmin, 
-                   y.max = st_bbox(area_data_framed)$ymax, 
-                   x.max = st_bbox(area_data_framed)$xmax, 
+    ggsn::scalebar(y.min = st_bbox(area_data_framed)$ymin - (height_decdegs*.03),
+                   x.min = st_bbox(area_data_framed)$xmin,
+                   y.max = st_bbox(area_data_framed)$ymax,
+                   x.max = st_bbox(area_data_framed)$xmax,
                    location = 'bottomleft',
                    height = .01, box.fill = c('#333333','#ffffff'),
                    border.size = .4, st.color = '#333333', st.size = 2.5, box.color = '#333333',
@@ -1193,7 +1185,7 @@ colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC55
     geom_sf(data = streets, color = 'white', fill = 'white', linewidth = 1) +
     geom_sf(data = sites %>% filter(place == place_var), color = 'white', fill = 'white', alpha = 0, linewidth = 1.5) +
     scale_fill_manual(expand = c(0,0), breaks =  c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork'), 
-                      values = c(grey2, colorhexes), name = 'Block complexity') + 
+                      values = c(grey2, colorhexes), name = 'Block\ncomplexity') + 
     theme_void() +
     theme(legend.position = 'none'))
 
@@ -1216,7 +1208,7 @@ colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC55
     geom_sf(data = layers %>% filter(block_property == 'on-network-streets',
                                      block_id %in% c("ZMB.5.6_2_9371")), 
             fill = 'yellow', color = 'white', alpha = .8, linewidth = .7, lineend = 'round') + # linetype = "dashed", 
-    scale_fill_manual(name = 'Block complexity', values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
+    scale_fill_manual(name = 'Block\ncomplexity', values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
     labs(subtitle = '') +
     theme_void() + theme(legend.title = element_text(size = 14, face = 'bold'),
                          legend.text = element_text(size = 14),
@@ -1237,7 +1229,7 @@ colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC55
     geom_sf(data = layers %>% filter(block_property == 'on-network-streets',
                                      block_id %in% c("ZMB.5.6_2_9339", "ZMB.5.6_2_9334", "ZMB.5.6_2_9335")), 
             fill = 'yellow', color = 'white', alpha = .8, linewidth = .7, lineend = 'round') + # linetype = "dashed", 
-    scale_fill_manual(name = 'Block complexity', values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
+    scale_fill_manual(name = 'Block\ncomplexity', values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
     labs(subtitle = '') +
     theme_void() + theme(legend.position = 'none',
                          plot.subtitle = element_text(size = 10),
@@ -1246,11 +1238,16 @@ colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC55
 design <- "
   AAAABBBBBB
   AAAABBBBBB
-  CCCCDDDDEE
-  CCCCDDDDEE
+  AAAABBBBBB
+  AAAABBBBBB
+  AAAABBBBBB
+  CCCDDDEEFF
+  CCCDDDEEFF
+  CCCDDDEEFF
+  CCCDDDEEFF
 "
 
-(layers_viz <- africa_zoom +  plot_k_discrete + map_block + l1 + l2 + 
+(layers_viz <- africa_zoom +  plot_k_discrete + l1 + map_block + l2 + guide_area() +
     #plot_layout(design = design, guides = "collect", tag_level = 'new') + plot_annotation( tag_levels = c('A')) &
     plot_layout(design = design, guides = "collect") + plot_annotation(tag_levels = list(c("A", "B", "C", "D", "E", "F"))) & 
   theme(plot.tag = element_text(size = 12)))
@@ -1393,7 +1390,7 @@ colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC55
 
 (plot_k_discrete <- ggplot() +
     geom_sf(data = area_data, aes(fill = as.factor(k_labels)), color = '#ffffff', linewidth = .0075) +   
-    scale_fill_manual(expand = c(0,0), values = c(grey2, colorhexes), name = 'Block complexity') + 
+    scale_fill_manual(expand = c(0,0), values = c(grey2, colorhexes), name = 'Block\ncomplexity') + 
     labs(caption = paste0('Population-weighted average block complexity: ', area_data %>% st_drop_geometry() %>% 
                              summarise(wm_var = weighted.mean(as.integer(k_complexity), landscan_population_un)) %>% pull() %>% round(.,2))) +
     #guides(color = guide_legend(nrow = 1, label.position = "bottom", keywidth = 2, keyheight = 1), 

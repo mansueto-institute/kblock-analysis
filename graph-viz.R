@@ -9,6 +9,9 @@ library(units)
 options(scipen = 999)
 options(lifecycle_verbosity = "warning")
 
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+getwd()
+
 # Read in functions -------------------------------------------------------
 
 source('graph_funcs.R')
@@ -89,70 +92,109 @@ ggsave(plot = vizgl, filename = paste0(wd_output,'/complexity-graph.pdf'),
 ggsave(plot = vizgraph, filename = paste0(wd_output,'/complexity-graph_parta.pdf'),
        width = 6.15, height = 5)
 
-(vizdual <- vizlattice +
-    # ggplot() +
-    # #geom_sf(data = poly_in, aes(fill = as.factor(k_complexity)), color = 'white', alpha = .8, linewidth = .2) +
-    # geom_sf(data = poly_in, color = 'black', alpha = 0, size = .3, linewidth = .06) +
-    # geom_sf(data = graph_points, color = 'black', alpha = .8, size = .3, linewidth = .01) +
-    # #geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(0)), aes(fill = as.character(iteration)), alpha = .9) +
-    # scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
-    # theme_void() + theme(legend.position = 'none') +
-    ggplot() +
-    #geom_sf(data = graph_points, color = 'black', alpha = .8, size = .3, linewidth = .01) +
-    geom_sf(data = poly_in, color = 'black', alpha = 0, size = .3, linewidth = .06) +
-    geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(1)), aes(fill = as.character(iteration)), alpha = 6) +
-    geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(1)), aes(fill = as.character(iteration)), alpha = .2) +
-    scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
-    theme_void() + theme(legend.position = 'none') +
-    ggplot() +
-    #geom_sf(data = graph_points, color = 'black', alpha = .8, size = .3, linewidth = .01) +
-    geom_sf(data = poly_in, color = 'black', alpha = 0, size = .3, linewidth = .06) +
-    geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(2)), aes(fill = as.character(iteration)), alpha = 6) +
-    geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(2)), aes(fill = as.character(iteration)), alpha = .2) +
-    scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
-    theme_void() + theme(legend.position = 'none') +
-    ggplot() +
-    #geom_sf(data = graph_points, color = 'black', alpha = .8, size = .3, linewidth = .01) +
-    geom_sf(data = poly_in, color = 'black', alpha = 0, size = .3, linewidth = .06) +
-    geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(3)), aes(fill = as.character(iteration)), alpha = .6) +
-    geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(3)), aes(fill = as.character(iteration)), alpha = .2) +
-    scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
-    theme_void() + theme(legend.position = 'none') +
-    ggplot() +
-    #geom_sf(data = graph_points, color = 'black', alpha = .8, size = .3, linewidth = .01) +
-    geom_sf(data = poly_in, color = 'black', alpha = 0, size = .3, linewidth = .06) +
-    geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(4)), aes(fill = as.character(iteration)), alpha = .6) +
-    geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(4)), aes(fill = as.character(iteration)), alpha = .2) +
-    scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
-    theme_void() + theme(legend.position = 'none') +
-    ggplot() +
-    #geom_sf(data = graph_points, color = 'black', alpha = .8, size = .3, linewidth = .01) +
-    geom_sf(data = poly_in, color = 'black', alpha = 0, size = .3, linewidth = .06) +
-    geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(5)), aes(fill = as.character(iteration)), alpha = .6) +
-    geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(5)), aes(fill = as.character(iteration)), alpha = .2) +
-    scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
-    theme_void() + theme(legend.position = 'none') +
-    ggplot() +
-    #geom_sf(data = graph_points, color = 'black', alpha = .8, size = .3, linewidth = .01) +
-    geom_sf(data = poly_in, color = 'black', alpha = 0, size = .3, linewidth = .06) +
-    geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(6)), aes(fill = as.character(iteration)), alpha = .6) +
-    geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(6)), aes(fill = as.character(iteration)), alpha = .2) +
-    scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
-    theme_void() + theme(legend.position = 'none') +
-    ggplot() +
-    #geom_sf(data = graph_points, color = 'black', alpha = .8, size = .3, linewidth = .01) +
-    geom_sf(data = poly_in, color = 'black', alpha = 0, size = .3, linewidth = .06) +
-    geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(7)), aes(fill = as.character(iteration)), alpha = .6) +
-    geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(7)), aes(fill = as.character(iteration)), alpha = .2) +
-    scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
-    theme_void() + theme(legend.position = 'none') +
-    ggplot() +
-    #geom_sf(data = graph_points, color = 'black', alpha = .8, size = .3, linewidth = .01) +
-    geom_sf(data = poly_in, color = 'black', alpha = 0, size = .3, linewidth = .06) +
-    geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(8)), aes(fill = as.character(iteration)), alpha = .6) +
-    geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(8)), aes(fill = as.character(iteration)), alpha = .2) +
-    scale_fill_manual( values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
-    theme_void() + theme(legend.position = 'none') )
 
-ggsave(plot = vizdual, filename = paste0(wd_output,'/complexity-graph-progression.pdf'),
-       width = 15, height = 10)
+# -------------------------------------------------------------------------
+
+
+voronoi_initial <- graph_points %>% select(geometry) %>%
+  st_cast(., "MULTIPOINT") %>%
+  st_cast(., "POINT") %>%
+  dplyr::summarize(geometry = st_union(geometry)) %>%
+  st_voronoi(.) %>%
+  st_collection_extract(., type = "POLYGON") %>%
+  st_intersection(., poly_in %>% st_union())
+
+(vizprep <- (ggplot() +
+              #geom_sf(data = poly_in, color = 'black', alpha = 0, size = .3, linewidth = .06) +
+              geom_sf(data = graph_data %>% filter(block_property == 'building-polygons', block_id %in% c("ZMB.5.6_2_9371")) ) +
+              geom_sf(data = line_in, fill = '#2C73D2', color = '#2C73D2', alpha = 1, linewidth = .5, lineend = 'round') +
+              labs(subtitle = 'A', caption= 'Buildings as polygons in parcels') + theme_void() + theme(legend.position = 'none', plot.caption = element_text(hjust = .3, vjust = 5))) +
+  (ggplot() +  
+     #geom_sf(data = poly_in, color = 'black', alpha = 0, size = .3, linewidth = .06) +
+     geom_sf(data = graph_points, color = '#333333', alpha = .8, size = .2, linewidth = .01)  +
+     geom_sf(data = line_in, fill = '#2C73D2', color = '#2C73D2', alpha = 1, linewidth = .5, lineend = 'round') +
+     labs(subtitle = 'B', caption= 'Buildings as points in parcels')  + theme_void() + theme(legend.position = 'none', plot.caption = element_text(hjust = .3, vjust = 5))) +
+  (ggplot() +  
+     geom_sf(data = voronoi_initial, color = 'black', alpha = 0, size = .3, linewidth = .06) +
+     geom_sf(data = graph_points, color = '#333333', alpha = .8, size = .2, linewidth = .01)  +
+     geom_sf(data = line_in, fill = '#2C73D2', color = '#2C73D2', alpha = 1, linewidth = .5, lineend = 'round') +
+     labs(subtitle = 'C', caption= 'Buildings as points and parcels as Voronoi cells')  + theme_void() + theme(legend.position = 'none', plot.caption = element_text(hjust = .3, vjust = 5))) +
+  (ggplot() +  
+     geom_sf(data = graph_lines, color = '#333333', alpha = .5, linewidth = .2) +
+     geom_sf(data = graph_points, color = '#333333', alpha = .8, size = .3, linewidth = .01) +
+     geom_sf(data = line_in, fill = '#2C73D2', color = '#2C73D2', alpha = 1, linewidth = .5, lineend = 'round') +
+     labs(subtitle = 'D', caption= 'Intial connected graph')  + theme_void() + theme(legend.position = 'none', plot.caption = element_text(hjust = .3, vjust = 5))) ) # Delaunay Trianguation
+  
+
+(vizdual <- (ggplot() +
+    geom_sf(data = line_in, fill = '#2C73D2', color = '#2C73D2', alpha = 1, linewidth = .5, lineend = 'round') +
+    #geom_sf(data = graph_points, color = '#333333', alpha = .8, size = .3, linewidth = .01) +
+    geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(1)), aes(fill = as.character(iteration)), alpha = 1, color = 'black') +
+    geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(1)), aes(fill = as.character(iteration)), alpha = 0, color = 'white', linewidth = .3) +
+    scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
+    labs(subtitle = 'A', caption= 'Iteration 1, remove cells with direct street access')  + theme_void() + theme(legend.position = 'none', plot.caption = element_text(hjust = .3, vjust = 5))) +
+(ggplot() +
+   geom_sf(data = line_in, fill = '#2C73D2', color = '#2C73D2', alpha = 1, linewidth = .5, lineend = 'round') +
+   #geom_sf(data = graph_points, color = '#333333', alpha = .8, size = .3, linewidth = .01) +
+   geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(2)), aes(fill = as.character(iteration)), alpha = 1, color = 'black') +
+   geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(2)), aes(fill = as.character(iteration)), alpha = 0, color = 'white', linewidth = .3) +
+   scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
+   labs(subtitle = 'B', caption= 'Iteration 2 of dual graph')  + theme_void() + theme(legend.position = 'none', plot.caption = element_text(hjust = .3, vjust = 5))) +
+(ggplot() +
+   geom_sf(data = line_in, fill = '#2C73D2', color = '#2C73D2', alpha = 1, linewidth = .5, lineend = 'round') +
+   #geom_sf(data = graph_points, color = '#333333', alpha = .8, size = .3, linewidth = .01) +
+   geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(3)), aes(fill = as.character(iteration)), alpha = 1, color = 'black') +
+   geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(3)), aes(fill = as.character(iteration)), alpha = 0, color = 'white', linewidth = .3) +
+   scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
+   labs(subtitle = 'C', caption= 'Iteration 3 of dual graph')  + theme_void() + theme(legend.position = 'none', plot.caption = element_text(hjust = .3, vjust = 5))) +
+(ggplot() +
+   geom_sf(data = line_in, fill = '#2C73D2', color = '#2C73D2', alpha = 1, linewidth = .5, lineend = 'round') +
+   #geom_sf(data = graph_points, color = '#333333', alpha = .8, size = .3, linewidth = .01) +
+   geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(4)), aes(fill = as.character(iteration)), alpha = 1, color = 'black') +
+   geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(4)), aes(fill = as.character(iteration)), alpha = 0, color = 'white', linewidth = .3) +
+   scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
+   labs(subtitle = 'D', caption= 'Iteration 4 of dual graph')  + theme_void() + theme(legend.position = 'none', plot.caption = element_text(hjust = .3, vjust = 5))) +
+(ggplot() +
+   geom_sf(data = line_in, fill = '#2C73D2', color = '#2C73D2', alpha = 1, linewidth = .5, lineend = 'round') +
+   #geom_sf(data = graph_points, color = '#333333', alpha = .8, size = .3, linewidth = .01) +
+   geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(5)), aes(fill = as.character(iteration)), alpha = 1, color = 'black') +
+   geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(5)), aes(fill = as.character(iteration)), alpha = 0, color = 'white', linewidth = .3) +
+   scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
+   labs(subtitle = 'E', caption= 'Iteration 5 of dual graph')  + theme_void() + theme(legend.position = 'none', plot.caption = element_text(hjust = .3, vjust = 5))) +
+(ggplot() +
+   geom_sf(data = line_in, fill = '#2C73D2', color = '#2C73D2', alpha = 1, linewidth = .5, lineend = 'round') +
+   #geom_sf(data = graph_points, color = '#333333', alpha = .8, size = .3, linewidth = .01) +
+   geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(6)), aes(fill = as.character(iteration)), alpha = 1, color = 'black') +
+   geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(6)), aes(fill = as.character(iteration)), alpha = 0, color = 'white', linewidth = .3) +
+   scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
+   labs(subtitle = 'F', caption= 'Iteration 6 of dual graph')  + theme_void() + theme(legend.position = 'none', plot.caption = element_text(hjust = .3, vjust = 5))) +
+(ggplot() +
+   geom_sf(data = line_in, fill = '#2C73D2', color = '#2C73D2', alpha = 1, linewidth = .5, lineend = 'round') +
+   #geom_sf(data = graph_points, color = '#333333', alpha = .8, size = .3, linewidth = .01) +
+   geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(7)), aes(fill = as.character(iteration)), alpha = 1, color = 'black') +
+   geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(7)), aes(fill = as.character(iteration)), alpha = 0, color = 'white', linewidth = .3) +
+   scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
+   labs(subtitle = 'G', caption= 'Iteration 7 of dual graph')  + theme_void() + theme(legend.position = 'none', plot.caption = element_text(hjust = .3, vjust = 5))) +
+(ggplot() +
+   geom_sf(data = line_in, fill = '#2C73D2', color = '#2C73D2', alpha = 1, linewidth = .5, lineend = 'round') +
+   #geom_sf(data = graph_points, color = '#333333', alpha = .8, size = .3, linewidth = .01) +
+   geom_sf(data = graph_duals %>% filter(part == 'dual') %>% filter(iteration %in% c(8)), aes(fill = as.character(iteration)), alpha = 1, color = 'black') +
+   geom_sf(data = graph_duals %>% filter(part == 'primal') %>% filter(iteration %in% c(8)), aes(fill = as.character(iteration)), alpha = 0, color = 'white', linewidth = .3) +
+   scale_fill_manual(values = c(grey2, colorhexes), breaks = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')) +
+   labs(subtitle = 'H', caption= 'Iteration 8 with final dual graph, thus Block Complexity = 8')  + theme_void() + theme(legend.position = 'none', plot.caption = element_text(hjust = .3, vjust = 5))) 
+)
+
+
+
+ggsave(plot = vizprep + plot_layout(nrow = 2), filename = paste0(wd_output,'/complexity-graph-prep.pdf'),
+       width = 8, height = 6)
+
+
+
+ggsave(plot = vizdual + plot_layout(nrow = 2), filename = paste0(wd_output,'/complexity-graph-progression.pdf'),
+       width = 15, height = 6)
+
+
+
+
+
