@@ -92,7 +92,7 @@ For related technical work see the following repos:
 * [cloudtile](https://github.com/mansueto-institute/cloudtile): CLI for converting (Geo)Parquet files to PMTiles on AWS.
 * [prclz](https://github.com/mansueto-institute/prclz): Python codebase from previous iteration of block complexity research (see kblock for more recent version).
 
-### Restricted data dependencies (SDI data, DHS data, comparisons with literature)
+#### Restricted data dependencies (SDI data, DHS data, comparisons with literature)
 * Google drive: https://drive.google.com/drive/folders/1MwfLHhuV2XkaJDFCK7LBondEJZvJgeDj
 * UChicago Box: https://uchicago.box.com/s/42oouket4lu6xdt2t9u8gfyz8bifrq6x
 * [Statistical comparisons with lit code](https://gist.github.com/nmarchio/a03ebe075489f57eb157799578a62646) for [Blumenstock et al. (2022)](https://www.pnas.org/doi/10.1073/pnas.2113658119) and [Yeh et al. (2020)](https://www.nature.com/articles/s41467-020-16185-w#Fig3)
