@@ -91,3 +91,7 @@ For related technical work see the following repos:
 * [geopull](https://github.com/mansueto-institute/geopull): Python package for extracting OSM data and generating street block delineations.
 * [cloudtile](https://github.com/mansueto-institute/cloudtile): CLI for converting (Geo)Parquet files to PMTiles on AWS.
 * [prclz](https://github.com/mansueto-institute/prclz): Python codebase from previous iteration of block complexity research (see kblock for more recent version).
+
+## Data dependencies (contact author for access)
+* Google drive: https://drive.google.com/drive/folders/1MwfLHhuV2XkaJDFCK7LBondEJZvJgeDj
+* UChicago Box: https://uchicago.box.com/s/42oouket4lu6xdt2t9u8gfyz8bifrq6x
