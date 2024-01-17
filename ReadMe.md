@@ -21,6 +21,7 @@
 ### Validation analysis:
 * To ground-truth block complexity statistics use [sdi-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/sdi-analysis.R) which compares block geometries to SDI settlements. Note, the data requires special access permissions. Contact authors for more information.
 * To validate the completeness of OSM street data use [street-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/street-analysis.R) which utilizes three data files: [streets_metrics.parquet](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/streets_metrics.parquet), [streets_summary.csv](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/streets_summary.csv), and [streets_validation.csv](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/streets_validation.csv).
+* [Statistical comparisons with](https://gist.github.com/nmarchio/a03ebe075489f57eb157799578a62646) for [Blumenstock et al. (2022)](https://www.pnas.org/doi/10.1073/pnas.2113658119) and [Yeh et al. (2020)](https://www.nature.com/articles/s41467-020-16185-w#Fig3)
 
 
 ### Workflow diagram:
@@ -95,4 +96,3 @@ For related technical work see the following repos:
 #### Restricted data dependencies for SDI and DHS (contact author for more info)
 * Google drive: https://drive.google.com/drive/folders/1MwfLHhuV2XkaJDFCK7LBondEJZvJgeDj
 * UChicago Box: https://uchicago.box.com/s/42oouket4lu6xdt2t9u8gfyz8bifrq6x
-* [Statistical comparisons with](https://gist.github.com/nmarchio/a03ebe075489f57eb157799578a62646) for [Blumenstock et al. (2022)](https://www.pnas.org/doi/10.1073/pnas.2113658119) and [Yeh et al. (2020)](https://www.nature.com/articles/s41467-020-16185-w#Fig3)
