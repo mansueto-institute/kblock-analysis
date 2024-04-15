@@ -94,5 +94,6 @@ For related technical work see the following repos:
 * [prclz](https://github.com/mansueto-institute/prclz): Python codebase from previous iteration of block complexity research (see kblock for more recent version).
 
 #### Restricted data dependencies for SDI and DHS (contact author for more info)
-* Google drive: https://drive.google.com/drive/folders/1MwfLHhuV2XkaJDFCK7LBondEJZvJgeDj
-* UChicago Box: https://uchicago.box.com/s/42oouket4lu6xdt2t9u8gfyz8bifrq6x
+* [Google drive](https://drive.google.com/drive/folders/1MwfLHhuV2XkaJDFCK7LBondEJZvJgeDj) with restricted data for full reproducibility for analysis.
+* [UChicago Box](https://uchicago.box.com/s/42oouket4lu6xdt2t9u8gfyz8bifrq6x) with restricted data for full reproducibility for analysis.
+* [Google drive](https://drive.google.com/drive/folders/1hVd4B2Dkl9lN8ZI6KV86BFPUnD7PlQDV?usp=drive_link) with data for minimal reproducible example of block complexity metrics.
