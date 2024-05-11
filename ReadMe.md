@@ -19,7 +19,7 @@
 * Below are functions applied in the [graph-viz.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/graph-viz.R) script which demonstrate how to compute block complexity graphs and visualize parcel level diagrams. Again these methods were designed for heuristic purposes and not used in production at scale.
   ```
   # Function to generate graph using building parcels (graph_polys) and on-network streets that connect interior buildings to exterior roads (graph_exclude)
-  graph_lines <- generate_graph(graph_polys, graph_exclude)
+  graph_lines <- generate_graph(graph_polys = building_parcels_polygons, graph_exclude = street_linestrings)
   # Function to convert graph to polygon representation
   graph_polys <- convert_to_poly(lines = graph_lines)
   # Function to compute block complexity at the parcel level such that each row to the output represents each subsequent interior layer of buildings. 
