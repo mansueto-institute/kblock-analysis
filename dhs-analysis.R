@@ -29,10 +29,9 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 getwd()
 
 dir.create('data/dhs-analysis')
-dir.create('data/dhs-analysis')
 dir.create('data/dhs-analysis/data')
 dir.create('data/dhs-analysis/viz')
-wd_path = 'data/dhs-analysis'
+wd_path = getwd()
 
 load_saved = TRUE
 
@@ -40,9 +39,11 @@ load_saved = TRUE
 
 # RData file
 if (load_saved == TRUE) {
-  load(paste0(wd_path,"/data/dhs_data.RData"))
-  # Requires authorization from DHS: https://uchicago.box.com/s/anw4fxc376dgtgol9tt87tuozipnk0kj
-  
+  # Download from https://drive.google.com/file/d/19LuFTTm-C1fikBc64xTpmf_zrNIcsTOd/view?usp=drive_link
+  # Or from https://uchicago.box.com/s/anw4fxc376dgtgol9tt87tuozipnk0kj
+  # copy /dhs-source-data into /data folder
+  load(paste0(wd_path,"/data/dhs-source-data/dhs_data.RData"))
+  subnat_to_blocks <- read_parquet(paste0(wd_path,'/data/dhs-source-data/blocks_to_dhs.parquet'))
 } else {
   # Make sure to download the block files (this is done in the complexity-analysis.R script)
   if (!file.exists(paste0("data/africa_data.parquet"))) {
@@ -59,7 +60,6 @@ if (load_saved == TRUE) {
 # subnat_indicators <- read_csv(paste0(wd_path,'/data/dhs_download.csv'))
 # subnat_all <- st_read(paste0(wd_path,'/data/dhs_geographies.geojson'))
 # subnat_all_wide <- st_read(paste0(wd_path,'/data/dhs_all_wide.geojson'))
-subnat_to_blocks <- read_parquet(paste0(wd_path,'/data/blocks_to_dhs.parquet'))
 
 # CHANGE TO DHS USER LOGIN CREDENTIAL
 # Follow instructions here: # https://docs.ropensci.org/rdhs/articles/introduction.html
@@ -82,8 +82,8 @@ dhs_project_name = "Identifying neighborhoods and detecting service deficits in 
 #   k_data_subnat <- read_csv(paste0(wd_path,'/data/k_data_subnational.csv'))
 # }
 
-names(subnat_all_wide)
-sapply(subnat_all_wide, function(X) sum(is.na(X)))
+#names(subnat_all_wide)
+#sapply(subnat_all_wide, function(X) sum(is.na(X)))
 
 # Check if indicator exists in DHS and MIS
 # fulluni_indicators <- dhs_data(surveyIds = c('SN2020MIS','MR2020DHS'),
@@ -690,8 +690,8 @@ cor_un <- rbind(cor_unslums, cor_unhab_1, cor_unhab_2) %>%
 cor_un %>% select(column_label, estimate, p.value, n, universe, source) %>% as_tibble() %>% print(n = 100, width = 200)
 rm(cor_unslums, cor_unhab_1, cor_unhab_2)
 
-write_excel_csv(cor_un, paste0(wd_path,'/data/','correlations_table_un.csv'))
-write_excel_csv(cor_dhs, paste0(wd_path,'/data/','correlations_table_dhs.csv'))
+write_excel_csv(cor_un, paste0(wd_path,'/data/dhs-analysis/data/correlations_table_un.csv'))
+write_excel_csv(cor_dhs, paste0(wd_path,'/data/dhs-analysis/data/correlations_table_dhs.csv'))
 
 # Show the correlation with pop density, building metrics, (hypothesis is these will have a weaker relationship)
 # Look at the correlation -- scatter and annotate big outliers
@@ -710,7 +710,6 @@ write_excel_csv(cor_dhs, paste0(wd_path,'/data/','correlations_table_dhs.csv'))
 #   as.matrix(),
 #   type=c('spearman')) %>% 
 #   tidy() %>% filter(column2 == 'k_complexity_average')
-
 
 sections <- c("SurveyYear", "SurveyId", "REG_ID" ,"DHSREGEN", "CNTRYNAMEE")
 # specifications <- c('k_complexity_average', 'region_nonurban_share', 'landscan_population_un_density_hectare', 'building_to_block_area_ratio', 'average_building_area_m2')
@@ -900,8 +899,8 @@ combined_reg_output <- combined_reg_output %>%
                                      sign(estimate)==sign(dv_correl))) %>%
   relocate(distribution, predictors, dv_var, dv_label, dv_correl, term, estimate, estimate_log_odds, importance, p.value, expected_sign,  pseudo.r.squared)
 
-write_excel_csv(combined_pred_output, paste0(wd_path,'/data/','predictions_table.csv'))
-write_excel_csv(combined_reg_output , paste0(wd_path,'/data/','regression_table.csv'))
+write_excel_csv(combined_pred_output, paste0(wd_path,'/data/dhs-analysis/data/predictions_table.csv'))
+write_excel_csv(combined_reg_output , paste0(wd_path,'/data/dhs-analysis/data/regression_table.csv'))
 
 rm(reg_data_i, reg_output, pred_output)
 rm(binomial_controls, binomial_countries, binomial_single, binomial_model, 
@@ -1086,7 +1085,7 @@ reg_pca_output <- rbind(tidy(linear_reg_single, conf.int = TRUE) %>% mutate_if(i
                           cbind(., tidy(linear_reg_controls_imp, conf.int = TRUE) %>% mutate_if(is.numeric, round, 7) %>% select(estimate) %>% rename(importance = estimate))
                         )
 
-write_excel_csv(reg_pca_output, paste0(wd_path,'/data/','pc1_regression_table.csv'))
+write_excel_csv(reg_pca_output, paste0(wd_path,'/data/dhs-analysis/data/pc1_regression_table.csv'))
 
 # With street density --------------------------------------------------
 
@@ -1113,9 +1112,63 @@ reg_pca_output_street_density <- rbind(tidy(linear_reg_single, conf.int = TRUE) 
                           cbind(., tidy(linear_reg_controls_imp, conf.int = TRUE) %>% mutate_if(is.numeric, round, 7) %>% select(estimate) %>% rename(importance = estimate))
 )
 
-write_excel_csv(reg_pca_output_street_density, paste0(wd_path,'/data/','pc1_regression_table_street_density.csv'))
+write_excel_csv(reg_pca_output_street_density, paste0(wd_path,'/data/dhs-analysis/data/pc1_regression_table_street_density.csv'))
 
 
+# Predictions -------------------------------------------------------------
+
+names(pca_reg_data)
+pca_reg_data_pred_output <- pca_reg_data %>%
+  select(SurveyId, REG_ID, PC1, SurveyYear, DHSREGEN, CNTRYNAMEE, PC1,
+         k_complexity_average, street_density_ratio_km_to_km2, region_urban_share, share_building_count_under_31m2, building_to_block_area_ratio, landscan_population_un_density_hectare) %>%
+  bind_cols(predict(linear_reg_single, pca_reg_data) %>% rename(pred_single = .pred),
+            predict(linear_reg_countries, pca_reg_data) %>% rename(pred_countries = .pred),
+            predict(linear_reg_controls, pca_reg_data) %>% rename(pred_controls = .pred)) %>%
+  mutate(abs_resid_single = abs(PC1 - pred_single),
+         abs_resid_countries = abs(PC1 - pred_countries),
+         abs_resid_controls = abs(PC1 - pred_controls),
+         resid_single = (PC1 - pred_single),
+         resid_countries = (PC1 - pred_countries),
+         resid_controls = (PC1 - pred_controls),
+         )
+
+pca_resid_summary <- pca_reg_data_pred_output %>%
+  group_by(CNTRYNAMEE) %>%
+  summarise(
+    PC1_mean = mean(PC1),
+    pred_single_mean = mean(pred_single),
+    pred_countries_mean = mean(pred_countries),
+    pred_controls_mean = mean(pred_controls),
+    resid_single_mean = mean(resid_single),
+    resid_countries_mean = mean(resid_countries),
+    resid_controls_mean = mean(resid_controls),
+    abs_resid_single_mean = mean(abs_resid_single),
+    abs_resid_countries_mean = mean(abs_resid_countries),
+    abs_resid_controls_mean = mean(abs_resid_controls)
+  ) %>%
+  ungroup()
+            
+pca_resid_corr <- rcorr(pca_reg_data_pred_output %>% 
+        select(k_complexity_average, street_density_ratio_km_to_km2, region_urban_share, share_building_count_under_31m2, building_to_block_area_ratio, landscan_population_un_density_hectare,
+               resid_single , resid_countries, resid_controls) %>% as.matrix(), type=c('spearman')) %>% 
+  tidy() %>%
+  filter(column1 %in% c('resid_single','resid_controls','resid_countries'),
+         !(column2 %in% c('resid_single','resid_controls','resid_countries'))) %>%
+  mutate(estimate_abs = abs(estimate)) %>%
+  arrange(column1,estimate_abs )
+
+# write_excel_csv(pca_resid_corr, paste0(wd_path,'/data/dhs-analysis/data/pca_resid_corr.csv'))
+# write_excel_csv(pca_reg_data_pred_output, paste0(wd_path,'/data/dhs-analysis/data/pca_region_residuals.csv'))
+# write_excel_csv(pca_resid_summary, paste0(wd_path,'/data/dhs-analysis/data/pca_country_residuals.csv'))
+
+writexl::write_xlsx(list('correlations_residuals' = pca_resid_corr,
+                         'regional_residuals' = pca_reg_data_pred_output,
+                         'coutry_avg_residuals' = pca_resid_summary), 
+                    col_names = TRUE, format_headers = TRUE, 
+                    path = paste0(wd_path,'/data/dhs-analysis/data/pca_residual_analysis.xlsx'))
+
+
+# glance(linear_reg_countries_imp )
 # DHS component vs block complexity ---------------------------------------
 
 survey_table <- subnat_pca %>% select(CNTRYNAMEE, SurveyYear) %>% rename(country = CNTRYNAMEE) %>% distinct() %>% arrange(SurveyYear) %>% pivot_wider(names_from = 'SurveyYear', values_from = c(SurveyYear))
@@ -1138,7 +1191,7 @@ writexl::write_xlsx(list('pca_regression' = reg_pca_output,
                          'pca_loadings' = pca_loadings, 
                          'pca_var_explained' = pca_var_explained), 
                     col_names = TRUE, format_headers = TRUE, 
-                    path = paste0(wd_path,'/data/','pca_var_analysis.xlsx'))
+                    path = paste0(wd_path,'/data/dhs-analysis/data/pca_var_analysis.xlsx'))
 
 # Latex -------------------------------------------------------------------
 
@@ -1197,7 +1250,7 @@ for (i in unique(latex_table$category)) {
     }
 }
 
-write_csv(latex_code_df, paste0(wd_path,'/data/','latex_table.csv'))
+write_csv(latex_code_df, paste0(wd_path,'/data/dhs-analysis/data/latex_table.csv'))
 
 # 
 # Street density vs Block complexity 
@@ -1302,7 +1355,7 @@ design3 <- "
 # subnat_clusters %>% select(ISO) %>% distinct()
 # "PCA on the following dimensions: percentage of de jure population with an improved sanitation facility; with an improved water source on the premises; with basic sanitation service; basic water service; earth/sand floors; with electricity; with limited sanitation service; with limited water service; with natural floors; with water on the premises; in each wealth quintile; living in households whose main source of drinking water is an improved source; mean number of persons per sleeping room; and percentage of households with 1 to 2, 3 to 4, 5 to 6, or 7 or more persons per sleeping room; percentage of women who are literate."
 
-ggsave(plot = dhs_k_v_pca_grob, filename = paste0(wd_path,'/viz/scatter_k_PC1.pdf'), width = 16, height = 12)  
+ggsave(plot = dhs_k_v_pca_grob, filename = paste0(wd_path,'/data/dhs-analysis/viz/scatter_k_PC1.pdf'), width = 16, height = 12)  
 rm(dhs_k_v_pca_grob)
 # 4 x 3  ------------------------------------------------------------------
 
@@ -1466,7 +1519,7 @@ rm(dhs_k_v_pca_grob)
                                              left = text_grob(paste0('PC1 of PCA on DHS indicators'), rot = 90, vjust = 1, size = 15, face = "bold"), 
                                              bottom = text_grob("Block complexity", rot = 0, vjust = -9, size = 15, face = "bold") ) )
 
-ggsave(plot = dhs_k_v_pca_grob_4x3, filename = paste0(wd_path,'/viz/scatter_k_PC1_4x3.pdf'), width = 12.3, height = 16)  
+ggsave(plot = dhs_k_v_pca_grob_4x3, filename = paste0(wd_path,'/data/dhs-analysis/viz/scatter_k_PC1_4x3.pdf'), width = 12.3, height = 16)  
 rm(dhs_k_v_pca_4x3 )
 
 # OSM street completeness comparison ---------------------------------------------
@@ -1691,7 +1744,7 @@ k_thresh_pop_area <- read_parquet(paste0('data/africa_data.parquet')) %>%
     plot_annotation(tag_levels = list(c("A","B", "C"))) & 
     theme(plot.tag = element_text(size = 13)))
 
-ggsave(plot =  bar_15, filename = paste0(wd_path,'/viz/bar_chart_k_15plus.pdf'), width = 10, height = 11)  
+ggsave(plot =  bar_15, filename = paste0(wd_path,'/data/dhs-analysis/viz/bar_chart_k_15plus.pdf'), width = 10, height = 11)  
 
 # Correlation of population in block complexity levels vs PC1 -----------------------------------------------------
 
@@ -1862,7 +1915,7 @@ line_correl_k_thresh  + scatter_15plus_outliers
   plot_annotation(tag_levels = list(c("A", "B"))) & 
   theme(plot.tag = element_text(size = 13)))
 
-ggsave(plot = k_thresh_charts, filename = paste0(wd_path,'/viz/scatter_k_thresh.pdf'), width = 17, height = 7)  
+ggsave(plot = k_thresh_charts, filename = paste0(wd_path,'/data/dhs-analysis/viz/scatter_k_thresh.pdf'), width = 17, height = 7)  
 
 
 # Write analytics table ---------------------------------------------------
@@ -1890,7 +1943,7 @@ writexl::write_xlsx(list('corr_dhs' = cor_dhs,
                          #'offnet_country' = rbind(k_data_offnet_country, k_data_offnet_15_country),
                          #'offnet_all' = rbind(k_data_offnet_all, k_data_offnet_15_all)),
                     col_names = TRUE, format_headers = TRUE,
-                    path = paste0(wd_path,'/data/dhs_analysis_tables.xlsx'))
+                    path = paste0(wd_path,'/data/dhs-analysis/data/dhs_analysis_tables.xlsx'))
 
 
 # Appendix ----------------------------------------------------------------
@@ -1909,7 +1962,52 @@ map_theme <- theme_bw() +
         axis.ticks = element_blank(),
         panel.grid.major = element_blank())
 
-dir.create(paste0(wd_path,'/viz/maps'))
+dir.create(paste0(wd_path,'/data/dhs-analysis/viz/maps'))
+
+pc1_map_data <- subnat_all_wide_k %>%
+  select(SurveyId, REG_ID, REGNAME, CountryName, geometry) %>%
+  inner_join(., pca_reg_data_pred_output %>%
+              select(SurveyId, REG_ID, PC1, pred_single, pred_countries, pred_controls, 
+                     resid_single, resid_countries, resid_controls),
+            by = c('SurveyId'='SurveyId','REG_ID'='REG_ID'))
+
+
+sprintf("U+0177")
+text(1, 1, paste0("b", sprintf("\U+0177"), "aːu"))
+
+library(Cairo)
+library(rnaturalearth)
+library(rnaturalearthdata)
+world <- ne_countries(scale = 50)
+#iso_code_list <- c( 'AGO', 'BDI', 'BEN', 'BFA', 'BWA', 'CAF', 'CIV', 'CMR', 'COD', 'COG', 'COM', 'CPV', 'DJI', 'ERI', 'ESH', 'ETH', 'GAB', 'GHA', 'GIN', 'GMB', 'GNB', 'GNQ', 'KEN', 'LBR', 'LSO', 'MDG', 'MLI', 'MOZ', 'MRT', 'MUS', 'MWI', 'NAM', 'NER', 'NGA', 'RWA', 'SDN', 'SEN', 'SLE', 'SOM', 'SSD', 'STP', 'SWZ', 'SYC', 'TCD', 'TGO', 'TZA', 'UGA', 'ZAF', 'ZMB', 'ZWE')        
+iso_code_list <- c("AGO", "BEN", "BFA", "CMR", "COD", "CIV", "GAB", "GHA", "GIN", "LSO", "LBR", "MLI", "MRT", "NAM", "NER", "NGA", "SLE", "ZAF", "TGO")
+subsaharan_africa <- world %>%
+  filter(adm0_a3 %in% iso_code_list) %>% 
+  select(adm0_a3) 
+
+(pc1_map <- ggplot() +
+      geom_sf(data = pc1_map_data, aes(fill = PC1), color = 'white') +
+      geom_sf(data = subsaharan_africa, fill = 'white', color = '#333333', alpha = 0, linewidth = .3) + 
+      labs(subtitle = "Observed PC1 (y)") +
+      scale_fill_distiller(palette = 'Spectral',  labels = scales::comma, limits = c(-10,15), oob = scales::squish) +
+    ggplot() +
+      geom_sf(data = pc1_map_data, aes(fill = pred_controls), color = 'white') +
+      geom_sf(data = subsaharan_africa, fill = 'white', color = '#333333', alpha = 0, linewidth = .3) + 
+      labs(subtitle = "Predicted PC1 (ŷ)") +
+      scale_fill_distiller(palette = 'Spectral',  labels = scales::comma, limits = c(-10,15), oob = scales::squish ) +
+    ggplot() +
+      geom_sf(data = pc1_map_data, aes(fill = (resid_controls)), color = 'white') +
+      geom_sf(data = subsaharan_africa, fill = 'white', color = '#333333', alpha = 0, linewidth = .3) + 
+      labs(subtitle = "Residual (y - ŷ)") +
+      scale_fill_distiller(palette = 'Spectral',  labels = scales::comma, limits = c(-10,15), oob = scales::squish ) +
+    plot_layout(guides = "collect") +
+    plot_annotation(title = 'Country effects and controls model', tag_levels = 'A') &
+    map_theme)
+
+ggsave(plot = pc1_map, device=cairo_pdf, filename = paste0(wd_path,'/data/dhs-analysis/viz/maps/pc1_map.pdf'), width = 12, height = 6)  
+
+
+# -------------------------------------------------------------------------
 
 for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
   print(i)
@@ -1953,7 +2051,7 @@ for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
          scale_fill_distiller(direction = -1, palette = 'Spectral',  labels = scales::percent )) +
       plot_annotation(title = paste0(title_country,' ',title_year,' | Health and Education')) & 
       map_theme
-    ggsave(plot = dhs_humandev, filename = paste0(wd_path,'/viz/maps/',title_country,'-',title_year,'-','humandev.png'), width = 12, height = 6, dpi = 300)  
+    ggsave(plot = dhs_humandev, filename = paste0(wd_path,'/data/viz/maps/',title_country,'-',title_year,'-','humandev.png'), width = 12, height = 6, dpi = 300)  
   }
   #dhs_humandev 
   
@@ -1993,7 +2091,7 @@ for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
       #plot_layout(guides = 'collect') &
       plot_annotation(title = paste0(title_country,' ',title_year,' | Household Characteristics')) & 
       map_theme #+ theme(legend.position = 'bottom')
-    ggsave(plot = dhs_infra, filename = paste0(wd_path,'/viz/maps/',title_country,'-',title_year,'-','infra.png'), width = 12, height = 6, dpi = 400)  
+    ggsave(plot = dhs_infra, filename = paste0(wd_path,'/data/viz/maps/',title_country,'-',title_year,'-','infra.png'), width = 12, height = 6, dpi = 400)  
   }
   #dhs_infra
   
@@ -2032,7 +2130,7 @@ for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
          scale_fill_distiller(direction = -1, palette = 'Spectral',  labels = scales::percent ))  +
       plot_annotation(title = paste0(title_country,' ',title_year,' | Wealth')) & 
       map_theme
-    ggsave(plot = dhs_wealth, filename = paste0(wd_path,'/viz/maps/',title_country,'-',title_year,'-','wealth.png'), width = 12, height = 6, dpi = 300)  
+    ggsave(plot = dhs_wealth, filename = paste0(wd_path,'/data/viz/maps/',title_country,'-',title_year,'-','wealth.png'), width = 12, height = 6, dpi = 300)  
   }
   #dhs_wealth
   
@@ -2073,7 +2171,7 @@ for (i in seq_along(unique(subnat_all_wide$SurveyId))) {
          scale_fill_distiller(limits = c(0,1), direction = -1, palette = 'Spectral',  labels = scales::percent )) +
       plot_annotation(title = paste0(title_country,' ',title_year,' | Block complexity')) & 
       map_theme
-    ggsave(plot = dhs_k, filename = paste0(wd_path,'/viz/maps/',title_country,'-',title_year,'-','complexity.png'), width = 12, height = 6, dpi = 300)  
+    ggsave(plot = dhs_k, filename = paste0(wd_path,'/data/viz/maps/',title_country,'-',title_year,'-','complexity.png'), width = 12, height = 6, dpi = 300)  
   }
   #dhs_k
 }
@@ -2113,7 +2211,7 @@ dhs_humandev <- (
   plot_annotation(title = paste0('sub-Saharan Africa | Health and Education')) & 
   map_theme
 dhs_humandev
-ggsave(plot = dhs_humandev, filename = paste0(wd_path,'/viz/maps/','africa-humandev.pdf'), width = 10, height = 8)  
+ggsave(plot = dhs_humandev, filename = paste0(wd_path,'/data/viz/maps/','africa-humandev.pdf'), width = 10, height = 8)  
 
 dhs_infra <- (
   ggplot() +
@@ -2144,7 +2242,7 @@ dhs_infra <- (
   plot_annotation(title = paste0('sub-Saharan Africa | Household Characteristics')) & 
   map_theme #+ theme(legend.position = 'bottom')
 dhs_infra
-ggsave(plot = dhs_infra, filename = paste0(wd_path,'/viz/maps/','africa-infra.pdf'), width = 10, height = 8)  
+ggsave(plot = dhs_infra, filename = paste0(wd_path,'/data/viz/maps/','africa-infra.pdf'), width = 10, height = 8)  
 
 dhs_wealth <- (
   ggplot() +
@@ -2174,7 +2272,7 @@ dhs_wealth <- (
   plot_annotation(title = paste0('sub-Saharan Africa | Wealth')) & 
   map_theme
 dhs_wealth
-ggsave(plot = dhs_wealth, filename = paste0(wd_path,'/viz/maps/','africa-wealth.pdf'), width = 10, height = 8)  
+ggsave(plot = dhs_wealth, filename = paste0(wd_path,'/data/dhs-analysis/viz/maps/africa-wealth.pdf'), width = 10, height = 8)  
 
 dhs_k <- (
   ggplot() +
@@ -2204,7 +2302,7 @@ dhs_k <- (
   plot_annotation(title = paste0('sub-Saharan Africa | Block complexity')) & 
   map_theme
 dhs_k
-ggsave(plot = dhs_k, filename = paste0(wd_path,'/viz/maps/','africa-complexity.pdf'), width = 10, height = 8)  
+ggsave(plot = dhs_k, filename = paste0(wd_path,'/data/dhs-analysis/viz/maps/africa-complexity.pdf'), width = 10, height = 8)  
 
 
 # How to process street density for the DHS -------------------------------
