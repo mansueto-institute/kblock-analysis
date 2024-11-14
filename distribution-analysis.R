@@ -297,7 +297,7 @@ chart_kampala <- generate_distribution_plots(area_code = 'ghsl_4427', area_label
 chart_dakar <- generate_distribution_plots(area_code = 'ghsl_1452', area_label = 'Dakar, SEN', title_size = 10, subtitle_size = 8) 
 
 (urban_combo_chart <- chart_lagos + chart_kinshasa + chart_luanda + chart_johannesburg + 
-    chart_addis + chart_khartoum + chart_dar + chart_abidjan + 
+    chart_addis + chart_khartoum + chart_dar + chart_abidjan +
     chart_accra + chart_nairobi + chart_kampala + chart_dakar +
     plot_layout(guides = 'collect') & 
     #plot_annotation(tag_levels = 'A') & 
