@@ -1972,10 +1972,10 @@ pc1_map_data <- subnat_all_wide_k %>%
             by = c('SurveyId'='SurveyId','REG_ID'='REG_ID'))
 
 
-sprintf("U+0177")
-text(1, 1, paste0("b", sprintf("\U+0177"), "aːu"))
+# sprintf("U+0177")
+# text(1, 1, paste0("b", sprintf("\U+0177"), "aːu"))
 
-library(Cairo)
+#library(Cairo)
 library(rnaturalearth)
 library(rnaturalearthdata)
 world <- ne_countries(scale = 50)
@@ -2001,7 +2001,8 @@ subsaharan_africa <- world %>%
       labs(subtitle = "Residual (y - ŷ)") +
       scale_fill_distiller(palette = 'Spectral',  labels = scales::comma, limits = c(-10,15), oob = scales::squish ) +
     plot_layout(guides = "collect") +
-    plot_annotation(title = 'Country effects and controls model', tag_levels = 'A') &
+    #plot_annotation(title = 'Country effects and controls model', tag_levels = 'A') &
+    plot_annotation(title = 'Country effects and controls model', tag_levels = list(c("C", "D", "E"))) &
     map_theme)
 
 ggsave(plot = pc1_map, device=cairo_pdf, filename = paste0(wd_path,'/data/dhs-analysis/viz/maps/pc1_map.pdf'), width = 12, height = 6)  

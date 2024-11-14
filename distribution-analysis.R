@@ -228,7 +228,7 @@ results_best %>%
   tally() %>%
   mutate(shr = percent(n/sum(n)))
 
-write_csv(results_best, 'dhs-analysis/data/distributions_output.csv')
+write_csv(results_best, 'data/dhs-analysis/data/distributions_output.csv')
 
 # Distribution chart function ---------------------------------------------
 
@@ -280,7 +280,7 @@ rural_chart <- generate_distribution_plots(area_code = '3 - Non-urban', area_lab
   theme(legend.position = 'bottom', plot.caption = element_text(hjust = 0)))
 
 ggsave(plot = agg_chart, 
-       filename = 'dhs-analysis/data/africa_dist_combo.pdf', width = 11, height = 8, device = cairo_pdf)
+       filename = 'data/dhs-analysis/viz/africa_dist_combo.pdf', width = 11, height = 8, device = cairo_pdf)
 
 
 chart_lagos <- generate_distribution_plots(area_code = 'ghsl_2125', area_label = 'Lagos, NGA', title_size = 10, subtitle_size = 8) 
@@ -296,14 +296,18 @@ chart_nairobi <- generate_distribution_plots(area_code = 'ghsl_4808', area_label
 chart_kampala <- generate_distribution_plots(area_code = 'ghsl_4427', area_label = 'Kampala, UGA', title_size = 10, subtitle_size = 8) 
 chart_dakar <- generate_distribution_plots(area_code = 'ghsl_1452', area_label = 'Dakar, SEN', title_size = 10, subtitle_size = 8) 
 
-(urban_combo_chart <- chart_lagos + chart_kinshasa + chart_luanda + chart_johannesburg + chart_addis + chart_khartoum +
-    chart_dar + chart_abidjan + chart_accra + chart_nairobi + chart_kampala + chart_dakar +
+(urban_combo_chart <- chart_lagos + chart_kinshasa + chart_luanda + chart_johannesburg + 
+    chart_addis + chart_khartoum + chart_dar + chart_abidjan +
+    chart_accra + chart_nairobi + chart_kampala + chart_dakar +
     plot_layout(guides = 'collect') & 
-    plot_annotation(tag_levels = 'A') & 
+    #plot_annotation(tag_levels = 'A') & 
+    plot_annotation(tag_levels = list(c("E", "F", "G", "H", 'I', 'J', "K", "L", "M", "N", 'O', 'P'))) &
     theme(legend.position = 'bottom', plot.caption = element_text(hjust = 0)))
 
+library(Cairo)
+
 ggsave(plot = urban_combo_chart, 
-       filename = 'dhs-analysis/data/urban_dist_combo.pdf', width = 16, height = 12, device = cairo_pdf)
+       filename = 'data/dhs-analysis/viz/urban_dist_combo.pdf', width = 16, height = 12, device = cairo_pdf)
 
 # chart_kano <- generate_distribution_plots(area_code = 'ghsl_2717', area_label = 'Kano, NGA')
 # chart_cape <- generate_distribution_plots(area_code = 'ghsl_3268', area_label = 'Cape Town, ZAF')
@@ -357,5 +361,5 @@ urban_dist_tbl1 <- urban_dist_tbl1 %>% select(geo_name, distribution, dist_desc_
 dist_tbl1 <- country_dist_tbl1 %>%
   left_join(., urban_dist_tbl1, by = c('order'='order'))
 
-write_excel_csv(x = dist_tbl1, file = 'dhs-analysis/data/dist_tbl.csv')
+write_excel_csv(x = dist_tbl1, file = 'data/dhs-analysis/data/dist_tbl.csv')
 
