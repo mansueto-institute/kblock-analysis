@@ -82,27 +82,34 @@ gc()
 
 # Load country boundaries -------------------------------------------------
 
-filedir <- paste0(tempdir(), '/countries/')
-unlink(filedir, recursive = TRUE)
-dir.create(filedir)
-country_shp <- paste0('https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/ne_110m_admin_0_countries.zip')
-download.file(url = country_shp , destfile = paste0(filedir, basename(country_shp)))
-unzip(paste0(filedir,basename(country_shp )), exdir= filedir)
-list.files(path = filedir)
-world <- st_read(fs::dir_ls(filedir, regexp = "\\.shp$")[1])
+# filedir <- paste0(tempdir(), '/countries/')
+# unlink(filedir, recursive = TRUE)
+# dir.create(filedir)
+# country_shp <- paste0('https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/ne_110m_admin_0_countries.zip')
+# download.file(url = country_shp , destfile = paste0(filedir, basename(country_shp)))
+# unzip(paste0(filedir,basename(country_shp )), exdir= filedir)
+# list.files(path = filedir)
+# world <- st_read(fs::dir_ls(filedir, regexp = "\\.shp$")[1])
 
-iso_code_list <- c( 'AGO', 'BDI', 'BEN', 'BFA', 'BWA', 'CAF', 'CIV', 'CMR', 'COD', 'COG', 'COM', 'CPV', 'DJI', 'ERI', 'ESH', 'ETH', 'GAB', 'GHA', 'GIN', 'GMB', 'GNB', 'GNQ', 'KEN', 'LBR', 'LSO', 'MDG', 'MLI', 'MOZ', 'MRT', 'MUS', 'MWI', 'NAM', 'NER', 'NGA', 'RWA', 'SDN', 'SEN', 'SLE', 'SOM', 'SSD', 'STP', 'SWZ', 'SYC', 'TCD', 'TGO', 'TZA', 'UGA', 'ZAF', 'ZMB', 'ZWE')
+library(rnaturalearth)
+library(rnaturalearthdata)
+world <- ne_countries(scale = 50)
+iso_code_list <- c( 'AGO', 'BDI', 'BEN', 'BFA', 'BWA', 'CAF', 'CIV', 'CMR', 'COD', 'COG', 'COM', 'CPV', 'DJI', 'ERI', 'ESH', 'ETH', 'GAB', 'GHA', 'GIN', 'GMB', 'GNB', 'GNQ', 'KEN', 'LBR', 'LSO', 'MDG', 'MLI', 'MOZ', 'MRT', 'MUS', 'MWI', 'NAM', 'NER', 'NGA', 'RWA', 'SDN', 'SDS','SEN', 'SLE', 'SOM', 'SSD', 'STP', 'SWZ', 'SYC', 'TCD', 'TGO', 'TZA', 'UGA', 'ZAF', 'ZMB', 'ZWE')        
 
 subsaharan_africa <- world %>%
-  select(ISO_A3, NAME_EN, geometry) %>%
-  filter(ISO_A3 %in% iso_code_list) %>%
-  st_make_valid()
-rm(world)
+  filter(adm0_a3 %in% iso_code_list) %>% 
+  select(adm0_a3)  %>%
+  rename(ISO_A3 = adm0_a3) %>%
+  mutate(lon = map_dbl(geometry, ~st_point_on_surface(.x)[[1]]),
+         lat = map_dbl(geometry, ~st_point_on_surface(.x)[[2]])) %>%
+  mutate(ISO_A3 = case_when(ISO_A3 == 'SDS' ~ 'SSD', TRUE ~ ISO_A3))
+
 
 # Load settlement boundaries ----------------------------------------------
 
 # Requies special access permissions from SDI
 # https://uchicago.app.box.com/folder/235077315882
+# https://drive.google.com/drive/folders/1QlvsNzOYyULleEr17aY1TKGMzYfXr9sX?usp=drive_link
 filedir = 'data/sdi-analysis/boundaries/CSV Files'
 files_list <- fs::dir_ls(filedir, regexp = "\\.csv$")
 files_list 
@@ -153,16 +160,17 @@ sdi_boundaries_valid <- sdi_boundaries  %>%
   mutate(ISO_A3 = case_when(country == 'Sierra Leone' ~ 'SLE',
                             country == 'SIERRA LEONE' ~ 'SLE',
                             country == 'South Africa' ~ 'ZAF',
-                            TRUE ~ as.character(ISO_A3)),
-         NAME_EN = case_when(country == 'Sierra Leone' ~ 'Sierra Leone',
-                             country == 'SIERRA LEONE' ~ 'Sierra Leone',
-                             country == 'South Africa' ~ 'South Africa',
-                             TRUE ~ as.character(NAME_EN))) 
+                            TRUE ~ as.character(ISO_A3))) 
+         # NAME_EN = case_when(country == 'Sierra Leone' ~ 'Sierra Leone',
+         #                     country == 'SIERRA LEONE' ~ 'Sierra Leone',
+         #                     country == 'South Africa' ~ 'South Africa',
+         #                     TRUE ~ as.character(NAME_EN))) 
 
 st_write(sdi_boundaries_valid, 'data/sdi-analysis/data/sdi_boundaries.geojson', delete_dsn = TRUE)
 
 # -------------------------------------------------------------------------
 # Run Python code
+# https://drive.google.com/drive/folders/1MwfLHhuV2XkaJDFCK7LBondEJZvJgeDj?usp=sharing
 
 # import geopandas as gpd
 # import pandas as pd
@@ -185,6 +193,7 @@ st_write(sdi_boundaries_valid, 'data/sdi-analysis/data/sdi_boundaries.geojson', 
 
 # Load services data ------------------------------------------------------
 
+# https://drive.google.com/drive/folders/1QlvsNzOYyULleEr17aY1TKGMzYfXr9sX?usp=drive_link
 services_dir <- 'data/sdi-analysis/services'
 services_list <- fs::dir_ls(services_dir, regexp = "\\.csv$")
 services_list
@@ -223,6 +232,7 @@ sdi_services <- sdi_services %>%
 
 # Load profiles data ------------------------------------------------------
 
+# https://drive.google.com/drive/folders/1QlvsNzOYyULleEr17aY1TKGMzYfXr9sX?usp=drive_link
 profiles_dir <- 'data/sdi-analysis/settlement profiles'
 profiles_list <- fs::dir_ls(profiles_dir, regexp = "\\.csv$")
 profiles_list
@@ -308,6 +318,8 @@ sdi_profiles2 <- sdi_profiles %>%
 area_data <- arrow::open_dataset('data/africa_data.parquet') %>% 
   select(block_id, block_geohash, block_area_m2, building_area_m2, building_count, average_building_area_m2, building_to_block_area_ratio, k_complexity, landscan_population_un, worldpop_population_un, country_code, country_name, class_urban_hierarchy, urban_id, urban_center_name, urban_country_code, urban_country_name) %>%
   collect()
+
+#/Users/nm/Downloads/kblock-analysis/data/sdi-analysis/data/sdi_boundaries.geojson
 
 # sdi_boundaries_overlay.parquet is generated with Python code above
 sdi_areas <- st_read_parquet('data/sdi-analysis/data/sdi_boundaries_overlay.parquet') %>%
@@ -550,11 +562,11 @@ k_distribution <- rbind(sdi_areas3 %>%
           legend.text = element_text(color = '#333333', size = 11)
     ) ) 
 
-annotation_bottom = paste0('Notes: For Figure A on left the upper / lower quartile are in black and min / max are in yellow (only for SDI samples). The sample size of SDI settlements: ', paste(unlist(caption_note$caption_label), collapse ="; "), '.')
+annotation_bottom = paste0('Notes: For Figure C on left the upper / lower quartile are in black and min / max are in yellow (only for SDI samples). The sample size of SDI settlements: ', paste(unlist(caption_note$caption_label), collapse ="; "), '.')
 
 print(annotation_bottom)
 (sdi_validation <- bar_sdi + histogram_sdi + plot_layout(guides = 'collect') 
-  & plot_annotation(tag_levels = list(c("A","B"))
+  & plot_annotation(tag_levels = list(c("C","D"))
                     #,caption = str_wrap(annotation_bottom, 203)
                     )
   & theme(legend.position = 'bottom',
@@ -576,7 +588,8 @@ sle_boundaries <- sdi_boundaries_valid %>%
   filter(ISO_A3 == 'SLE') %>%
   st_join(., freetown %>% select(geometry), left = FALSE)
 
-freetown_blocks <- st_read_parquet('data/sdi-analysis/freetown_blocks.parquet') %>%
+# https://drive.google.com/drive/folders/1QlvsNzOYyULleEr17aY1TKGMzYfXr9sX?usp=drive_link
+freetown_blocks <- st_read_parquet('data/sdi-analysis/data/freetown_blocks.parquet') %>%
   st_set_crs(sf::st_crs(4326))  %>% 
   mutate(k_10 = case_when(round(k_complexity,0) >= 10  ~ "10+", 
                              TRUE ~ as.character(round(k_complexity,0)))) %>%
@@ -584,8 +597,6 @@ freetown_blocks <- st_read_parquet('data/sdi-analysis/freetown_blocks.parquet') 
 
 grey2 <- c('#414141','#777777')
 colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC556','#F9F871'))(10-2)
-
-
 
 
 freetown_map <- ((ggplot() + 

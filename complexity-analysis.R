@@ -338,115 +338,6 @@ rm(agglos_df)
 # Visualization -----------------------------------------------------------
 
 
-# World countries ---------------------------------------------------------
-
-filedir <- paste0(tempdir(), '/countries/')
-unlink(filedir, recursive = TRUE)
-dir.create(filedir)
-country_shp <- paste0('https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/ne_110m_admin_0_countries.zip')
-download.file(url = country_shp , destfile = paste0(filedir, basename(country_shp)))
-unzip(paste0(filedir,basename(country_shp )), exdir= filedir)
-list.files(path = filedir)
-world <- st_read(fs::dir_ls(filedir, regexp = "\\.shp$")[1])
-
-iso_code_list <- c( 'AGO', 'BDI', 'BEN', 'BFA', 'BWA', 'CAF', 'CIV', 'CMR', 'COD', 'COG', 'COM', 'CPV', 'DJI', 'ERI', 'ESH', 'ETH', 'GAB', 'GHA', 'GIN', 'GMB', 'GNB', 'GNQ', 'KEN', 'LBR', 'LSO', 'MDG', 'MLI', 'MOZ', 'MRT', 'MUS', 'MWI', 'NAM', 'NER', 'NGA', 'RWA', 'SDN', 'SEN', 'SLE', 'SOM', 'SSD', 'STP', 'SWZ', 'SYC', 'TCD', 'TGO', 'TZA', 'UGA', 'ZAF', 'ZMB', 'ZWE')        
-
-subsaharan_africa <- world %>%
-  filter(ISO_A3 %in% iso_code_list) %>% 
-  select(ISO_A3) %>%
-  mutate(lon = map_dbl(geometry, ~st_point_on_surface(.x)[[1]]),
-         lat = map_dbl(geometry, ~st_point_on_surface(.x)[[2]]))
-
-# Scatter pie chart -------------------------------------------------------
-
-# By country
-scatterpie_by_country_data <- generate_crosstabs(data = df_combined_prep, 
-                                     group_by_cols = c(country_cols), 
-                                     crosstab_cols = c("k_2"),
-                                     sum_cols = sum_cols, divide_cols = divide_cols, 
-                                     transform_cols = transform_cols, transform_func_list = list(log10 = log_10),
-                                     group_by_agg_cols_list = list('country' = "country_code"),
-                                     group_by_agg_func_list = list(sum = sum, share = share),
-                                     agg_cols = c('landscan_population_un', 'worldpop_population_un'))
-
-scatterpie_by_country_data <- scatterpie_by_country_data %>%
-  select(country_name, country_code, group_val, landscan_population_un) %>%
-  pivot_wider(id_cols = c(country_name, country_code), names_from = c(group_val), values_from = c(landscan_population_un)) %>%
-  mutate(total = (`1 to 3` + `4 to 9` + `10+` + `Off network`),
-         radius =  sqrt((total)/pi)/2000,
-         radius_scaled = case_when(radius <= 1.4 ~ 1.4, radius >= 4 ~ 4, TRUE ~ as.numeric(radius)))
-
-scatterpie_by_country_data <- subsaharan_africa %>%
-  left_join(., scatterpie_by_country_data, by = c('ISO_A3'='country_code')) %>%
-  mutate(lat = case_when(ISO_A3 == 'BEN' ~ lat + 1, ISO_A3 == 'TGO' ~ lat - 2.8, ISO_A3 == 'BDI' ~ lat - 1.3, ISO_A3 == 'CMR' ~ lat - 2, ISO_A3 == 'LBR' ~ lat - 1, ISO_A3 == 'GHA' ~ lat + .4, ISO_A3 == 'GNB' ~ lat - 1, ISO_A3 == 'RWA' ~ lat + .6, ISO_A3 == 'SEN' ~ lat + 1, TRUE ~ lat),
-         lon = case_when(ISO_A3 == 'ZAF' ~ lon - 1.8, ISO_A3 == 'GMB' ~ lon - 2, ISO_A3 == 'SLE' ~ lon - 1, ISO_A3 == 'CMR' ~ lon - 1, ISO_A3 == 'ESH' ~ lon - 1, ISO_A3 == 'GNQ' ~ lon - 1, ISO_A3 == 'DJI' ~ lon + .5, TRUE ~ lon))
-
-grey2 <- c('#414141') 
-kcat = 4
-colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC556','#F9F871'))(kcat-1)
-
-(scatterpie_by_country <- ggplot() + 
-    geom_sf(data = scatterpie_by_country_data, fill = '#D3D3D3', color = 'white', linewidth = .75) +
-    geom_scatterpie(data = scatterpie_by_country_data %>% st_drop_geometry(), aes(x=lon, y=lat, group=country_name, r = radius_scaled), cols = c("1 to 3","4 to 9","10+","Off network"),  color='white', size = .3, alpha=1) +
-    labs(subtitle = 'Block complexity\nby country population') + 
-    geom_scatterpie_legend(scatterpie_by_country_data %>% st_drop_geometry() %>% filter(total >= 50000000) %>% pull(radius), x=-5, y=-20, n = 2, labeller=function(x) ifelse(((x*2000)^2)*pi > 1000000, paste0(round((((x*2000)^2)*pi )/1000000,-1),'M'), paste0(round((((x*2000)^2)*pi )/1000,-1),'K'))) +
-    geom_label(data = scatterpie_by_country_data, aes(x = lon, y = lat, label = ISO_A3), label.padding =  unit(0.1, "lines"), label.size = 0, label.r =  unit(0.1, "lines"), fill = 'black', color = "white", size =1.7, fontface = 'bold') +
-    scale_fill_manual(values = c(grey2, colorhexes), name = 'Block complexity') + 
-    theme_void() + theme(plot.subtitle = element_text(size = 15, face="bold", hjust=.5, vjust = -5)))
-
-# By country + conurbation
-
-scatterpie_by_conurban_data <- generate_crosstabs(data = df_combined_prep, 
-                                     group_by_cols = c(country_cols, 'class_urban_nonurban'), 
-                                     crosstab_cols = c("k_2"),
-                                     sum_cols = sum_cols, divide_cols = divide_cols, 
-                                     transform_cols = transform_cols, transform_func_list = list(log10 = log_10),
-                                     group_by_agg_cols_list = list('country' = "country_code"),
-                                     group_by_agg_func_list = list(sum = sum, share = share),
-                                     agg_cols = c('landscan_population_un', 'worldpop_population_un'))
-
-scatterpie_by_conurban_data <- scatterpie_by_conurban_data %>%
-  filter(class_urban_nonurban == "1 - Core, peripheral, & peri-urban") %>%
-  select(country_name, country_code, group_val, landscan_population_un) %>%
-  pivot_wider(id_cols = c(country_name, country_code), names_from = c(group_val), values_from = c(landscan_population_un), values_fill = 0 ) %>%
-  mutate(total = (`1 to 3` + `4 to 9` + `10+` + `Off network`),
-         radius =  sqrt((total)/pi)/2000,
-         radius_scaled = case_when(radius <= 1.4 ~ 1.4, radius >= 4 ~ 4, TRUE ~ as.numeric(radius)))
-
-scatterpie_by_conurban_data <- subsaharan_africa %>%
-  left_join(.,  scatterpie_by_conurban_data, by = c('ISO_A3'='country_code')) %>%
-  mutate(lat = case_when(ISO_A3 == 'BEN' ~ lat + 1, ISO_A3 == 'TGO' ~ lat - 2.8, ISO_A3 == 'BDI' ~ lat - 1.3, ISO_A3 == 'CMR' ~ lat - 2, ISO_A3 == 'LBR' ~ lat - 1, ISO_A3 == 'GHA' ~ lat + .4, ISO_A3 == 'GNB' ~ lat - 1, ISO_A3 == 'RWA' ~ lat + .6, ISO_A3 == 'SEN' ~ lat + 1, TRUE ~ lat),
-         lon = case_when(ISO_A3 == 'ZAF' ~ lon - 1.8, ISO_A3 == 'GMB' ~ lon - 2, ISO_A3 == 'SLE' ~ lon - 1, ISO_A3 == 'CMR' ~ lon - 1, ISO_A3 == 'ESH' ~ lon - 1, ISO_A3 == 'GNQ' ~ lon - 1, ISO_A3 == 'DJI' ~ lon + .5, TRUE ~ lon))
-
-grey2 <- c('#414141') 
-kcat = 4
-colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC556','#F9F871'))(kcat-1)
-
-(scatterpie_by_conurban <- ggplot() + 
-    geom_sf(data =  scatterpie_by_conurban_data, fill = '#D3D3D3',
-            color = 'white', size = .75) +
-    geom_scatterpie(data = scatterpie_by_conurban_data %>% st_drop_geometry(), 
-                    aes(x=lon, y=lat, group=country_name, r = radius_scaled), 
-                    cols = c("1 to 3","4 to 9","10+","Off network"),  color='white', size = .3, alpha=1) +
-    labs(subtitle = 'Block complexity by\ncountry conurban population') + 
-    geom_scatterpie_legend(scatterpie_by_conurban_data %>% st_drop_geometry() %>% filter(total >= 50000000) %>% pull(radius), x=-5, y=-20, n = 2, labeller=function(x) ifelse(((x*2000)^2)*pi > 1000000, paste0(round((((x*2000)^2)*pi )/1000000,-1),'M'), paste0(round((((x*2000)^2)*pi )/1000,-1),'K'))) +
-    geom_label(data = scatterpie_by_conurban_data, aes(x = lon, y = lat, label = ISO_A3), label.padding =  unit(0.1, "lines"), label.size = 0, label.r =  unit(0.1, "lines"), fill = 'black', color = "white", size =1.7, fontface = 'bold') +
-    scale_fill_manual(values = c(grey2,colorhexes), name = 'Block complexity') + 
-    theme_void() + 
-    theme(plot.margin=unit(c(t=3,r=20,b=5,l=5), "pt"),
-          plot.subtitle = element_text(size = 15, face="bold", hjust=.5, vjust = -5)))
-
-(scatterpie_charts <- scatterpie_by_country + scatterpie_by_conurban + 
-    plot_layout(guides = 'collect') &
-    plot_annotation(tag_levels = list(c("A","B"))) & 
-    theme(plot.tag = element_text(size = 13))
-  )
-
-ggsave(plot = scatterpie_charts, filename = paste0(wd_output,'/viz/scatterpie_charts.pdf'), width = 12.4, height = 5.64)
-
-rm(scatterpie_charts, scatterpie_by_country, scatterpie_by_conurban, scatterpie_by_country_data, scatterpie_by_conurban_data)
-   
-
 # Scatter by country-4way -------------------------------------------------
 
 scatter_by_country_4way = generate_crosstabs(data = df_combined_prep, 
@@ -939,7 +830,162 @@ colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC55
     guides(fill = guide_legend(nrow = 1, reverse = TRUE), color = guide_legend(nrow = 1, reverse = TRUE) ))
 
 ggsave(plot = conurban_bars, filename = paste0(wd_output,'/viz/conurban_bars.pdf'), width = 16, height = 8) # dpi = 300,
-rm(a, b, conurban_bars, conurban_bars_data)
+#rm(a, b, conurban_bars, conurban_bars_data)
+
+# World countries ---------------------------------------------------------
+
+# filedir <- paste0(tempdir(), '/countries/')
+# unlink(filedir, recursive = TRUE)
+# dir.create(filedir)
+# country_shp <- paste0('https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/ne_110m_admin_0_countries.zip')
+# download.file(url = country_shp , destfile = paste0(filedir, basename(country_shp)))
+# unzip(paste0(filedir,basename(country_shp )), exdir= filedir)
+# list.files(path = filedir)
+# world <- st_read(fs::dir_ls(filedir, regexp = "\\.shp$")[1])
+
+library(rnaturalearth)
+library(rnaturalearthdata)
+world <- ne_countries(scale = 50)
+iso_code_list <- c( 'AGO', 'BDI', 'BEN', 'BFA', 'BWA', 'CAF', 'CIV', 'CMR', 'COD', 'COG', 'COM', 'CPV', 'DJI', 'ERI', 'ESH', 'ETH', 'GAB', 'GHA', 'GIN', 'GMB', 'GNB', 'GNQ', 'KEN', 'LBR', 'LSO', 'MDG', 'MLI', 'MOZ', 'MRT', 'MUS', 'MWI', 'NAM', 'NER', 'NGA', 'RWA', 'SDN', 'SDS','SEN', 'SLE', 'SOM', 'SSD', 'STP', 'SWZ', 'SYC', 'TCD', 'TGO', 'TZA', 'UGA', 'ZAF', 'ZMB', 'ZWE')        
+
+subsaharan_africa <- world %>%
+  filter(adm0_a3 %in% iso_code_list) %>% 
+  select(adm0_a3)  %>%
+  rename(ISO_A3 = adm0_a3) %>%
+  mutate(lon = map_dbl(geometry, ~st_point_on_surface(.x)[[1]]),
+         lat = map_dbl(geometry, ~st_point_on_surface(.x)[[2]])) %>%
+  mutate(ISO_A3 = case_when(ISO_A3 == 'SDS' ~ 'SSD', TRUE ~ ISO_A3))
+
+# Scatter pie chart -------------------------------------------------------
+
+# By country
+scatterpie_by_country_data <- generate_crosstabs(data = df_combined_prep, 
+                                                 group_by_cols = c(country_cols), 
+                                                 crosstab_cols = c("k_2"),
+                                                 sum_cols = sum_cols, divide_cols = divide_cols, 
+                                                 transform_cols = transform_cols, transform_func_list = list(log10 = log_10),
+                                                 group_by_agg_cols_list = list('country' = "country_code"),
+                                                 group_by_agg_func_list = list(sum = sum, share = share),
+                                                 agg_cols = c('landscan_population_un', 'worldpop_population_un'))
+
+scatterpie_by_country_data <- scatterpie_by_country_data %>%
+  select(country_name, country_code, group_val, landscan_population_un) %>%
+  pivot_wider(id_cols = c(country_name, country_code), names_from = c(group_val), values_from = c(landscan_population_un)) %>%
+  mutate(total = (`1 to 3` + `4 to 9` + `10+` + `Off network`),
+         radius =  sqrt((total)/pi)/2000,
+         radius_scaled = case_when(radius <= 1.6 ~ 1.6, radius >= 4 ~ 4, TRUE ~ as.numeric(radius)))
+       # radius_scaled = case_when(radius <= 1.4 ~ 1.4, radius >= 4 ~ 4, TRUE ~ as.numeric(radius)))
+
+scatterpie_by_country_data <- subsaharan_africa %>%
+  left_join(., scatterpie_by_country_data, by = c('ISO_A3'='country_code')) %>%
+  mutate(lat = case_when(ISO_A3 == 'BEN' ~ lat + 1, ISO_A3 == 'TGO' ~ lat - 2.8, ISO_A3 == 'BDI' ~ lat - 1.3, ISO_A3 == 'CMR' ~ lat - 2, ISO_A3 == 'LBR' ~ lat - 1, ISO_A3 == 'GHA' ~ lat + .4, ISO_A3 == 'GNB' ~ lat - 1, ISO_A3 == 'RWA' ~ lat + .6, ISO_A3 == 'SEN' ~ lat + 1, TRUE ~ lat),
+         lon = case_when(ISO_A3 == 'ZAF' ~ lon - 1.8, ISO_A3 == 'GMB' ~ lon - 2, ISO_A3 == 'SLE' ~ lon - 1, ISO_A3 == 'CMR' ~ lon - 1, ISO_A3 == 'ESH' ~ lon - 1, ISO_A3 == 'GNQ' ~ lon - 1, ISO_A3 == 'DJI' ~ lon + .5, TRUE ~ lon))
+
+grey2 <- c('#414141') 
+kcat = 4
+colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC556','#F9F871'))(kcat-1)
+
+(scatterpie_by_country <- ggplot() + 
+    geom_sf(data = scatterpie_by_country_data, fill = '#D3D3D3', color = 'white', 
+            linewidth = .2) +
+    geom_scatterpie(data = scatterpie_by_country_data %>% st_drop_geometry(), 
+                    aes(x=lon, y=lat, group=country_name, r = radius_scaled), 
+                    cols = c("1 to 3","4 to 9","10+","Off network"),  
+                    color='white',  linewidth = .3, alpha=1) +
+    labs(subtitle = 'Block complexity\nby country population') + 
+    geom_scatterpie_legend(scatterpie_by_country_data %>% st_drop_geometry() %>% 
+                             filter(total >= 50000000) %>% pull(radius), 
+                           x=-5, y=-20, n = 2, 
+                           labeller=function(x) ifelse(((x*2000)^2)*pi > 1000000, paste0(round((((x*2000)^2)*pi )/1000000,-1),'M'), paste0(round((((x*2000)^2)*pi )/1000,-1),'K'))) +
+    ##geom_label(data = scatterpie_by_country_data, aes(x = lon, y = lat, label = ISO_A3), label.padding =  unit(0.1, "lines"), 
+    ##           label.size = 0, label.r =  unit(0.1, "lines"), fill = 'black', color = "white", size =1.4, fontface = 'bold') +
+    #geom_label(data = scatterpie_by_country_data, aes(x = lon, y = lat, label = ISO_A3), 
+    #           label.padding =  unit(0.1, "lines"), label.size = 0, label.r =  unit(0.1, "lines"), 
+    #           fill = 'black', color = "white", size =1.5, fontface = 'bold') +
+    scale_fill_manual(values = c(grey2, colorhexes), name = 'Block complexity') + 
+    theme_void() + 
+    theme(#plot.margin=unit(c(t=3,r=10,b=5,l=5), "pt"),
+      #legend.position = 'none',
+      #legend.position = 'bottom',
+      plot.subtitle = element_text(size = 12, face="bold", hjust=.5, vjust = -5)))
+
+# By country + conurbation
+
+scatterpie_by_conurban_data <- generate_crosstabs(data = df_combined_prep, 
+                                                  group_by_cols = c(country_cols, 'class_urban_nonurban'), 
+                                                  crosstab_cols = c("k_2"),
+                                                  sum_cols = sum_cols, divide_cols = divide_cols, 
+                                                  transform_cols = transform_cols, transform_func_list = list(log10 = log_10),
+                                                  group_by_agg_cols_list = list('country' = "country_code"),
+                                                  group_by_agg_func_list = list(sum = sum, share = share),
+                                                  agg_cols = c('landscan_population_un', 'worldpop_population_un'))
+
+scatterpie_by_conurban_data <- scatterpie_by_conurban_data %>%
+  filter(class_urban_nonurban == "1 - Core, peripheral, & peri-urban") %>%
+  select(country_name, country_code, group_val, landscan_population_un) %>%
+  pivot_wider(id_cols = c(country_name, country_code), names_from = c(group_val), values_from = c(landscan_population_un), values_fill = 0 ) %>%
+  mutate(total = (`1 to 3` + `4 to 9` + `10+` + `Off network`),
+         radius =  sqrt((total)/pi)/2000,
+         radius_scaled = case_when(radius <= 1.6 ~ 1.6, radius >= 4 ~ 4, TRUE ~ as.numeric(radius)))
+
+scatterpie_by_conurban_data <- subsaharan_africa %>%
+  left_join(.,  scatterpie_by_conurban_data, by = c('ISO_A3'='country_code')) %>%
+  mutate(lat = case_when(ISO_A3 == 'BEN' ~ lat + 1, ISO_A3 == 'TGO' ~ lat - 2.8, ISO_A3 == 'BDI' ~ lat - 1.3, ISO_A3 == 'CMR' ~ lat - 2, ISO_A3 == 'LBR' ~ lat - 1, ISO_A3 == 'GHA' ~ lat + .4, ISO_A3 == 'GNB' ~ lat - 1, ISO_A3 == 'RWA' ~ lat + .6, ISO_A3 == 'SEN' ~ lat + 1, TRUE ~ lat),
+         lon = case_when(ISO_A3 == 'ZAF' ~ lon - 1.8, ISO_A3 == 'GMB' ~ lon - 2, ISO_A3 == 'SLE' ~ lon - 1, ISO_A3 == 'CMR' ~ lon - 1, ISO_A3 == 'ESH' ~ lon - 1, ISO_A3 == 'GNQ' ~ lon - 1, ISO_A3 == 'DJI' ~ lon + .5, TRUE ~ lon))
+
+grey2 <- c('#414141') 
+kcat = 4
+colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC556','#F9F871'))(kcat-1)
+
+(scatterpie_by_conurban <- ggplot() + 
+    geom_sf(data =  scatterpie_by_conurban_data, fill = '#D3D3D3',
+            color = 'white', linewidth = .2) +
+    geom_scatterpie(data = scatterpie_by_conurban_data %>% st_drop_geometry(), 
+                    aes(x=lon, y=lat, group=country_name, r = radius_scaled), 
+                    cols = c("1 to 3","4 to 9","10+","Off network"),  
+                    color='white', size = .3, alpha=1) +
+    labs(subtitle = 'Block complexity by\ncountry conurban population') + 
+    geom_scatterpie_legend(scatterpie_by_conurban_data %>% st_drop_geometry() %>% filter(total >= 50000000) %>% pull(radius), x=-5, y=-20, n = 2, 
+                           breaks = c(1.2,2.6),
+                           labeller=function(x) ifelse(((x*2000)^2)*pi > 1000000, paste0(round((((x*2000)^2)*pi )/1000000,-1),'M'), 
+                                                       paste0(round((((x*2000)^2)*pi )/1000,-1),'K'))) +
+    #geom_label(data = scatterpie_by_conurban_data, aes(x = lon, y = lat, label = ISO_A3), 
+    #           label.padding =  unit(0.1, "lines"), label.size = 0, label.r =  unit(0.1, "lines"), 
+    #           fill = 'black', color = "white", size =1.4, fontface = 'bold') +
+    scale_fill_manual(values = c(grey2,colorhexes), name = 'Block complexity') + 
+    theme_void() + 
+    theme(#plot.margin=unit(c(t=3,r=10,b=5,l=5), "pt"),
+      #legend.position = 'bottom',
+      plot.subtitle = element_text(size = 12, face="bold", hjust=.5, vjust = -5)))
+
+(scatterpie_charts <- scatterpie_by_country + scatterpie_by_conurban + 
+    plot_layout(guides = 'collect') &
+    plot_annotation(tag_levels = list(c("C","D"))) & 
+    theme(plot.tag = element_text(size = 11),
+          legend.position = 'bottom'))
+
+ggsave(plot = scatterpie_charts, filename = paste0(wd_output,'/viz/scatterpie_charts.pdf'), width = 10, height = 8)
+# rm(scatterpie_charts, scatterpie_by_country, scatterpie_by_conurban, scatterpie_by_country_data, scatterpie_by_conurban_data)
+
+# -------------------------------------------------------------------------
+
+# width = 16, height = 8
+# width = 12.4, height = 5.64
+
+# design <- "
+#  AAAA
+#  BBBB
+# "
+# 
+# bars_scatterpie <- conurban_bars / scatterpie_charts +
+#   plot_layout(design = design) 
+# 
+# ggsave(plot = bars_scatterpie, filename = paste0(wd_output,'/viz/bars_scatterpie.pdf'), 
+#        width = 13, height = 14)
+
+
+#rm(a, b, conurban_bars, conurban_bars_data)
+#rm(scatterpie_charts, scatterpie_by_country, scatterpie_by_conurban, scatterpie_by_country_data, scatterpie_by_conurban_data)
 
 
 # Inequality charts -------------------------------------------------------
@@ -1035,8 +1081,9 @@ if (!file.exists(paste0("data/africa_geodata.parquet"))) {
   print('africa_geodata.parquet already downloaded.')
 }
 
-#area_data <- arrow::open_dataset(paste0('data/africa_geodata.parquet')) %>% 
-area_data <- arrow::open_dataset('data/lusaka_blocks.parquet') %>%
+# https://uchicago.box.com/s/iw5xaigoazidkvul79yba8hbpnpmd4jt
+# dsbprylw7ncuq.cloudfront.net/_kblock-analysis/blocks_lusaka.parquet
+area_data <- arrow::open_dataset('data/blocks_lusaka.parquet') %>%
   filter(urban_id %in% c('ghsl_3798','periurban_925')) %>% 
   read_sf_dataset() %>%
   st_set_crs(4326) %>%
@@ -1258,336 +1305,338 @@ ggsave(plot = layers_viz, filename = paste0(wd_output,'/viz/zoom_maps.pdf'),
 
 # Maps --------------------------------------------------------------------
 
-area_data <- arrow::open_dataset(paste0('data/africa_geodata.parquet')) %>% 
-  filter(urban_id %in% c('ghsl_2125')) %>% 
-  read_sf_dataset() %>%
-  st_set_crs(4326) %>%
-  st_make_valid()
-
-# 'ghsl_2125 'Lagos'
-# 'ghsl_3209 'Kinshasa'
-# 'ghsl_3050 'Luanda'
-# 'ghsl_3673 'Johannesburg'
-# 'ghsl_5134 'Addis Ababa'
-# 'ghsl_4335 'Khartoum'
-# 'ghsl_5222 'Dar es Salaam'
-# 'ghsl_1675 'Abidjan'
-# 'ghsl_1910 'Accra'
-# 'ghsl_4808 'Nairobi'
-# 'ghsl_2717 'Kano'
-# 'ghsl_4427 'Kampala'
-# 'ghsl_3268 'Cape Town'
-# 'ghsl_1452 'Dakar'
-
-width = st_distance(st_sf(geom = st_sfc(st_point(c(st_bbox(area_data)$xmin, st_bbox(area_data)$ymin)),
-                                        st_point(c(st_bbox(area_data)$xmax, st_bbox(area_data)$ymin)), crs = 4326)))[2] %>%  drop_units()
-height = st_distance(st_sf(geom = st_sfc(st_point(c(st_bbox(area_data)$xmin, st_bbox(area_data)$ymin)),
-                                         st_point(c(st_bbox(area_data)$xmin, st_bbox(area_data)$ymax)), crs = 4326)))[2] %>%  drop_units()
-
-width_tenth = round((width*.2)/1000,-1)
-if (width_tenth < 1) {
-  width_tenth = round((width*.2)/1000,0)
-}
-height_decdegs = abs(unname(st_bbox(area_data)$ymax) - unname(st_bbox(area_data)$ymin))
-
-
-(plot_popdensity_log <- ggplot() +
-    geom_sf(data = area_data,
-            aes(fill = landscan_population_un_density_hectare_log), 
-            color = 'white', linewidth= .0075, alpha = 1) +
-    labs(subtitle = "Population per hectare",
-         caption = paste0(
-           'Population: ', area_data %>% st_drop_geometry() %>%
-             summarize_at(vars(landscan_population_un), list(sum)) %>% pull() %>% round(.,0) %>% comma(),
-           '\n',
-           'Average population per hectare: ', area_data %>% st_drop_geometry() %>% filter(landscan_population_un > 0) %>%
-             summarize_at(vars(landscan_population_un, block_hectares), list(sum)) %>% mutate(pop_density = landscan_population_un/block_hectares) %>% pull() %>% round(.,1),
-           '\n',
-           'Median block population per hectare: ', area_data %>% st_drop_geometry() %>% 
-             filter(landscan_population_un > 0) %>% summarize_at(vars(landscan_population_un_density_hectare), list(median)) %>% pull() %>% round(.,1), 
-                          '')) +
-    #' people per hectare','\n 1 hectare = 10k m^2 = 1.4 soccer fields = 2.2 Manhattan city blocks')) +
-    scale_fill_distiller(direction = -1, palette = 'Spectral', name = 'Population\nper hectare', oob = scales::squish, limits= c(1, 3), 
-                         breaks= c(1,2,3,4,5,6,7), 
-                         labels = c('0',"100","1K","10K","100K","1M","10M")) +
-    scale_color_distiller(direction = -1, palette = 'Spectral', name = 'Population\nper hectare', oob = scales::squish, limits= c(1, 3), 
-                          breaks= c(1,2,3,4,5,6,7), 
-                          labels = c('0',"100","1K","10K","100K","1M","10M")) +
-    theme_bw() + 
-    theme(
-      legend.position = c(x = .5, y = 1),
-      legend.direction = "horizontal",
-      legend.key.width=unit(40,"pt"),
-      legend.key.height=unit(5,"pt"),
-      axis.ticks =element_blank(),
-      panel.grid = element_blank(),
-      panel.border = element_blank(),
-      axis.text = element_blank(),
-      axis.title = element_blank(),
-      plot.margin=unit(c(t=15,r=0,b=0,l=0), "pt"),
-      plot.subtitle = element_text(size = 11, face="bold", vjust = 5, hjust = .5),
-      plot.caption = element_text(size = 9, hjust = .5, vjust = 10),
-      legend.title = element_blank(),
-      text = element_text(color = "#333333")) +
-    ggsn::scalebar(y.min = st_bbox(area_data)$ymin - (height_decdegs*.04), 
-                   x.min = st_bbox(area_data)$xmin, 
-                   y.max = st_bbox(area_data)$ymax, 
-                   x.max = st_bbox(area_data)$xmax, 
-                   location = 'bottomleft',
-                   height = .01, box.fill = c('#333333','#ffffff'),
-                   border.size = .4, st.color = '#333333', st.size = 2.5, box.color = '#333333',
-                   dist = width_tenth/2, dist_unit = "km", transform = TRUE, model = "WGS84") )
-
-
-ggsave(plot = plot_popdensity_log, filename = paste0(wd_output,'/viz/lagos_popdensity.pdf'),
-       width = 10, height = 8)
-
-(plot_populaton <- ggplot() +
-    geom_sf(data = area_data,
-            aes(fill = landscan_population_un_log), 
-            color = 'white', linewidth = .0075, alpha = .8) +
-    labs(subtitle = "Population",
-         caption = paste0('Total population: ',comma(sum(area_data$landscan_population_un)),'\n',
-                          'Average block population: ',comma(round(mean(area_data$landscan_population_un),2)))) + 
-    scale_fill_distiller(palette = 'Spectral', name = 'Population', oob = scales::squish, limits= c(1, max(area_data$landscan_population_un_log)), breaks= c(1,2,3,4,5,6,7), labels = c('0',"100","1K","10K","100K","1M","10M")) + 
-    scale_color_distiller(palette = 'Spectral', oob = scales::squish, limits= c(1, max(area_data$landscan_population_un_log)), breaks= c(1,2,3,4,5,6,7), labels = c('0',"100","1K","10K","100K","1M","10M")) +
-    theme_bw() + 
-    theme(
-      plot.caption = element_text(size = 10, hjust = .5, vjust = 5),
-      legend.position = c(.5, 1),
-      legend.direction = "horizontal",
-      legend.key.width=unit(40,"pt"),
-      legend.key.height=unit(5,"pt"),
-      axis.ticks =element_blank(),
-      panel.grid = element_blank(),
-      panel.border = element_blank(),
-      axis.text = element_blank(),
-      axis.title = element_blank(),
-      plot.margin = unit(c(t=15,r=0,b=0,l=0), "pt"),
-      plot.subtitle = element_text(size = 11, face="bold", vjust = 5, hjust = .5),
-      legend.title = element_blank(),
-      text = element_text(color = "#333333")) +
-    ggsn::scalebar(y.min = st_bbox(area_data)$ymin - (height_decdegs*.04), 
-                   x.min = st_bbox(area_data)$xmin, 
-                   y.max = st_bbox(area_data)$ymax, 
-                   x.max = st_bbox(area_data)$xmax, 
-                   location = 'bottomleft',
-                   height = .01, box.fill = c('#333333','#ffffff'),
-                   border.size = .4, st.color = '#333333', st.size = 2.5, box.color = '#333333',
-                   dist = width_tenth/2, dist_unit = "km", transform = TRUE, model = "WGS84") )
-
-plot_popdensity_log + plot_populaton 
-
-# ggsave(plot =layers_viz, filename = paste0(wd_output,'/viz/layers_viz.pdf'),
-#        width = 10, height = 8)
-
-area_data <- area_data %>% 
-  mutate(k_labels = gsub('-','\n',x = k_labels)) %>%
-  mutate(k_labels = factor(k_labels, levels = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')))  
-grey2 <- c('#777777','#414141') 
-kdist = max(as.integer(area_data$k_labels))
-colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC556','#F9F871'))(length(unique(area_data$k_labels))-2)
-
-(plot_k_discrete <- ggplot() +
-    geom_sf(data = area_data, aes(fill = as.factor(k_labels)), color = '#ffffff', linewidth = .0075) +   
-    scale_fill_manual(expand = c(0,0), values = c(grey2, colorhexes), name = 'Block\ncomplexity') + 
-    labs(caption = paste0('Population-weighted average block complexity: ', area_data %>% st_drop_geometry() %>% 
-                             summarise(wm_var = weighted.mean(as.integer(k_complexity), landscan_population_un)) %>% pull() %>% round(.,2))) +
-    #guides(color = guide_legend(nrow = 1, label.position = "bottom", keywidth = 2, keyheight = 1), 
-    #       fill =  guide_legend(nrow = 1, label.position = "bottom", keywidth = 2, keyheight = 1)) + 
-    theme_void() + theme(text = element_text(color = "#333333"),
-                       legend.position = 'none',
-                       legend.spacing.x = unit(1, 'pt'),
-                       legend.text = element_text(size = 10),
-                       axis.ticks =element_blank(),
-                       panel.grid = element_blank(),
-                       axis.title = element_blank(),
-                       panel.border = element_blank(),
-                       #panel.background = element_blank(),
-                       plot.margin=unit(c(t=0,r=0,b=0,l=0), "pt"),
-                       legend.title = element_blank(),
-                       plot.caption = element_text(size = 11, hjust = .5, vjust = 5), #margin=margin(0,0,0,0)),
-                       axis.text = element_blank()) +
-    ggsn::scalebar(y.min = st_bbox(area_data)$ymin - (height_decdegs*.03), 
-                   x.min = st_bbox(area_data)$xmin, 
-                   y.max = st_bbox(area_data)$ymax, 
-                   x.max = st_bbox(area_data)$xmax, 
-                   location = 'bottomleft',
-                   height = .01, box.fill = c('#333333','#ffffff'),
-                   border.size = .4, st.color = '#333333', st.size = 2.5, box.color = '#333333',
-                   dist = width_tenth/2, dist_unit = "km", transform = TRUE, model = "WGS84"))
-
-area_data_sum <- area_data %>% st_drop_geometry() %>%
-  group_by(k_labels) %>%
-  summarize_at(vars(block_hectares, landscan_population_un, worldpop_population_un), list(sum), na.rm = TRUE) %>%
-  ungroup() %>%
-  mutate(landscan_pop_density_hectare = landscan_population_un/block_hectares,
-         worldpop_pop_density_hectare = worldpop_population_un/block_hectares) %>% 
-  replace_na(list(block_pop_density_hectare = 0)) %>%
-  mutate(landscan_population_sum = sum(landscan_population_un),
-         worldpop_population_sum = sum(worldpop_population_un),
-         landscan_population_share = landscan_population_un/landscan_population_sum,
-         worldpop_population_share = worldpop_population_un/worldpop_population_sum) 
-
-(bar_k_distrib <- ggplot(area_data_sum) +
-    geom_bar(aes(y = landscan_population_un, x = k_labels, fill = k_labels), 
-             position="dodge",  stat="identity") +
-    geom_text(aes(x = k_labels, y =landscan_population_un, 
-                  label = ifelse(landscan_population_share > .05, paste0(round(landscan_population_share*100,0),"%"),'')),
-              size = 3, vjust =.5, hjust = 1.15, color = 'white', fontface='bold') +
-    geom_text(aes(x = k_labels, y = landscan_population_un, 
-                  label = ifelse(landscan_population_share <= .05, paste0(round(landscan_population_share*100,0),"%"),'')),
-              size = 3, vjust =.5, hjust = -.15, color = "#333333", fontface='bold') +
-    coord_flip() +
-    scale_fill_manual(values = c(grey2, colorhexes)) +
-    scale_y_continuous(breaks = scales::breaks_pretty(n = 6),
-                       expand = expansion(mult = c(0, .1)),
-                       limits = c(0, max(area_data_sum$landscan_population_un)),
-                       labels = label_comma(accuracy = 1L, scale = 0.000001, suffix = "M") ) +
-    theme_bw() + 
-    labs(y = 'Population', x = '', subtitle = '') + #'Population distribution across k-complexity levels'
-    theme(text = element_text(color = "#333333", size = 8, face = 'bold'),
-          legend.position= "none",
-          plot.margin=unit(c(t=0,r=0,b=10,l=0), "pt"),
-          axis.ticks = element_blank(),
-          axis.text = element_text(size = 8),
-          panel.grid = element_blank(),
-          panel.background = element_rect(fill='transparent'),
-          panel.border = element_blank(),
-          plot.background = element_rect(fill='transparent'),
-          axis.title = element_text(face="bold", size = 10),
-          plot.subtitle = element_text(size = 11, face="bold", hjust=.5)))
-
-plot_k_discrete  + bar_k_distrib
-  
-#plot_k_discrete + inset_element(bar_k_distrib, left = .65, bottom = .4, right = .95, top = .9) + plot_popdensity_log 
-#plot_k_discrete + inset_element(bar_k_distrib, left = .65, bottom = .4, right = .95, top = .9)
+#' # https://uchicago.box.com/s/bbcsyz4fbi0omc9gkr6qfpxqsza0ey0n
+#' # dsbprylw7ncuq.cloudfront.net/_kblock-analysis/blocks_lagos.parquet
+#' area_data <- arrow::open_dataset(paste0('data/blocks_lagos.parquet')) %>% 
+#'   filter(urban_id %in% c('ghsl_2125')) %>% 
+#'   read_sf_dataset() %>%
+#'   st_set_crs(4326) %>%
+#'   st_make_valid()
+#' 
+#' # 'ghsl_2125 'Lagos'
+#' # 'ghsl_3209 'Kinshasa'
+#' # 'ghsl_3050 'Luanda'
+#' # 'ghsl_3673 'Johannesburg'
+#' # 'ghsl_5134 'Addis Ababa'
+#' # 'ghsl_4335 'Khartoum'
+#' # 'ghsl_5222 'Dar es Salaam'
+#' # 'ghsl_1675 'Abidjan'
+#' # 'ghsl_1910 'Accra'
+#' # 'ghsl_4808 'Nairobi'
+#' # 'ghsl_2717 'Kano'
+#' # 'ghsl_4427 'Kampala'
+#' # 'ghsl_3268 'Cape Town'
+#' # 'ghsl_1452 'Dakar'
+#' 
+#' width = st_distance(st_sf(geom = st_sfc(st_point(c(st_bbox(area_data)$xmin, st_bbox(area_data)$ymin)),
+#'                                         st_point(c(st_bbox(area_data)$xmax, st_bbox(area_data)$ymin)), crs = 4326)))[2] %>%  drop_units()
+#' height = st_distance(st_sf(geom = st_sfc(st_point(c(st_bbox(area_data)$xmin, st_bbox(area_data)$ymin)),
+#'                                          st_point(c(st_bbox(area_data)$xmin, st_bbox(area_data)$ymax)), crs = 4326)))[2] %>%  drop_units()
+#' 
+#' width_tenth = round((width*.2)/1000,-1)
+#' if (width_tenth < 1) {
+#'   width_tenth = round((width*.2)/1000,0)
+#' }
+#' height_decdegs = abs(unname(st_bbox(area_data)$ymax) - unname(st_bbox(area_data)$ymin))
+#' 
+#' 
+#' (plot_popdensity_log <- ggplot() +
+#'     geom_sf(data = area_data,
+#'             aes(fill = landscan_population_un_density_hectare_log), 
+#'             color = 'white', linewidth= .0075, alpha = 1) +
+#'     labs(subtitle = "Population per hectare",
+#'          caption = paste0(
+#'            'Population: ', area_data %>% st_drop_geometry() %>%
+#'              summarize_at(vars(landscan_population_un), list(sum)) %>% pull() %>% round(.,0) %>% comma(),
+#'            '\n',
+#'            'Average population per hectare: ', area_data %>% st_drop_geometry() %>% filter(landscan_population_un > 0) %>%
+#'              summarize_at(vars(landscan_population_un, block_hectares), list(sum)) %>% mutate(pop_density = landscan_population_un/block_hectares) %>% pull() %>% round(.,1),
+#'            '\n',
+#'            'Median block population per hectare: ', area_data %>% st_drop_geometry() %>% 
+#'              filter(landscan_population_un > 0) %>% summarize_at(vars(landscan_population_un_density_hectare), list(median)) %>% pull() %>% round(.,1), 
+#'                           '')) +
+#'     #' people per hectare','\n 1 hectare = 10k m^2 = 1.4 soccer fields = 2.2 Manhattan city blocks')) +
+#'     scale_fill_distiller(direction = -1, palette = 'Spectral', name = 'Population\nper hectare', oob = scales::squish, limits= c(1, 3), 
+#'                          breaks= c(1,2,3,4,5,6,7), 
+#'                          labels = c('0',"100","1K","10K","100K","1M","10M")) +
+#'     scale_color_distiller(direction = -1, palette = 'Spectral', name = 'Population\nper hectare', oob = scales::squish, limits= c(1, 3), 
+#'                           breaks= c(1,2,3,4,5,6,7), 
+#'                           labels = c('0',"100","1K","10K","100K","1M","10M")) +
+#'     theme_bw() + 
+#'     theme(
+#'       legend.position = c(x = .5, y = 1),
+#'       legend.direction = "horizontal",
+#'       legend.key.width=unit(40,"pt"),
+#'       legend.key.height=unit(5,"pt"),
+#'       axis.ticks =element_blank(),
+#'       panel.grid = element_blank(),
+#'       panel.border = element_blank(),
+#'       axis.text = element_blank(),
+#'       axis.title = element_blank(),
+#'       plot.margin=unit(c(t=15,r=0,b=0,l=0), "pt"),
+#'       plot.subtitle = element_text(size = 11, face="bold", vjust = 5, hjust = .5),
+#'       plot.caption = element_text(size = 9, hjust = .5, vjust = 10),
+#'       legend.title = element_blank(),
+#'       text = element_text(color = "#333333")) +
+#'     ggsn::scalebar(y.min = st_bbox(area_data)$ymin - (height_decdegs*.04), 
+#'                    x.min = st_bbox(area_data)$xmin, 
+#'                    y.max = st_bbox(area_data)$ymax, 
+#'                    x.max = st_bbox(area_data)$xmax, 
+#'                    location = 'bottomleft',
+#'                    height = .01, box.fill = c('#333333','#ffffff'),
+#'                    border.size = .4, st.color = '#333333', st.size = 2.5, box.color = '#333333',
+#'                    dist = width_tenth/2, dist_unit = "km", transform = TRUE, model = "WGS84") )
+#' 
+#' 
+#' ggsave(plot = plot_popdensity_log, filename = paste0(wd_output,'/viz/lagos_popdensity.pdf'),
+#'        width = 10, height = 8)
+#' 
+#' (plot_populaton <- ggplot() +
+#'     geom_sf(data = area_data,
+#'             aes(fill = landscan_population_un_log), 
+#'             color = 'white', linewidth = .0075, alpha = .8) +
+#'     labs(subtitle = "Population",
+#'          caption = paste0('Total population: ',comma(sum(area_data$landscan_population_un)),'\n',
+#'                           'Average block population: ',comma(round(mean(area_data$landscan_population_un),2)))) + 
+#'     scale_fill_distiller(palette = 'Spectral', name = 'Population', oob = scales::squish, limits= c(1, max(area_data$landscan_population_un_log)), breaks= c(1,2,3,4,5,6,7), labels = c('0',"100","1K","10K","100K","1M","10M")) + 
+#'     scale_color_distiller(palette = 'Spectral', oob = scales::squish, limits= c(1, max(area_data$landscan_population_un_log)), breaks= c(1,2,3,4,5,6,7), labels = c('0',"100","1K","10K","100K","1M","10M")) +
+#'     theme_bw() + 
+#'     theme(
+#'       plot.caption = element_text(size = 10, hjust = .5, vjust = 5),
+#'       legend.position = c(.5, 1),
+#'       legend.direction = "horizontal",
+#'       legend.key.width=unit(40,"pt"),
+#'       legend.key.height=unit(5,"pt"),
+#'       axis.ticks =element_blank(),
+#'       panel.grid = element_blank(),
+#'       panel.border = element_blank(),
+#'       axis.text = element_blank(),
+#'       axis.title = element_blank(),
+#'       plot.margin = unit(c(t=15,r=0,b=0,l=0), "pt"),
+#'       plot.subtitle = element_text(size = 11, face="bold", vjust = 5, hjust = .5),
+#'       legend.title = element_blank(),
+#'       text = element_text(color = "#333333")) +
+#'     ggsn::scalebar(y.min = st_bbox(area_data)$ymin - (height_decdegs*.04), 
+#'                    x.min = st_bbox(area_data)$xmin, 
+#'                    y.max = st_bbox(area_data)$ymax, 
+#'                    x.max = st_bbox(area_data)$xmax, 
+#'                    location = 'bottomleft',
+#'                    height = .01, box.fill = c('#333333','#ffffff'),
+#'                    border.size = .4, st.color = '#333333', st.size = 2.5, box.color = '#333333',
+#'                    dist = width_tenth/2, dist_unit = "km", transform = TRUE, model = "WGS84") )
+#' 
+#' plot_popdensity_log + plot_populaton 
+#' 
+#' # ggsave(plot =layers_viz, filename = paste0(wd_output,'/viz/layers_viz.pdf'),
+#' #        width = 10, height = 8)
+#' 
+#' area_data <- area_data %>% 
+#'   mutate(k_labels = gsub('-','\n',x = k_labels)) %>%
+#'   mutate(k_labels = factor(k_labels, levels = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+', 'Off\nnetwork')))  
+#' grey2 <- c('#777777','#414141') 
+#' kdist = max(as.integer(area_data$k_labels))
+#' colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC556','#F9F871'))(length(unique(area_data$k_labels))-2)
+#' 
+#' (plot_k_discrete <- ggplot() +
+#'     geom_sf(data = area_data, aes(fill = as.factor(k_labels)), color = '#ffffff', linewidth = .0075) +   
+#'     scale_fill_manual(expand = c(0,0), values = c(grey2, colorhexes), name = 'Block\ncomplexity') + 
+#'     labs(caption = paste0('Population-weighted average block complexity: ', area_data %>% st_drop_geometry() %>% 
+#'                              summarise(wm_var = weighted.mean(as.integer(k_complexity), landscan_population_un)) %>% pull() %>% round(.,2))) +
+#'     #guides(color = guide_legend(nrow = 1, label.position = "bottom", keywidth = 2, keyheight = 1), 
+#'     #       fill =  guide_legend(nrow = 1, label.position = "bottom", keywidth = 2, keyheight = 1)) + 
+#'     theme_void() + theme(text = element_text(color = "#333333"),
+#'                        legend.position = 'none',
+#'                        legend.spacing.x = unit(1, 'pt'),
+#'                        legend.text = element_text(size = 10),
+#'                        axis.ticks =element_blank(),
+#'                        panel.grid = element_blank(),
+#'                        axis.title = element_blank(),
+#'                        panel.border = element_blank(),
+#'                        #panel.background = element_blank(),
+#'                        plot.margin=unit(c(t=0,r=0,b=0,l=0), "pt"),
+#'                        legend.title = element_blank(),
+#'                        plot.caption = element_text(size = 11, hjust = .5, vjust = 5), #margin=margin(0,0,0,0)),
+#'                        axis.text = element_blank()) +
+#'     ggsn::scalebar(y.min = st_bbox(area_data)$ymin - (height_decdegs*.03), 
+#'                    x.min = st_bbox(area_data)$xmin, 
+#'                    y.max = st_bbox(area_data)$ymax, 
+#'                    x.max = st_bbox(area_data)$xmax, 
+#'                    location = 'bottomleft',
+#'                    height = .01, box.fill = c('#333333','#ffffff'),
+#'                    border.size = .4, st.color = '#333333', st.size = 2.5, box.color = '#333333',
+#'                    dist = width_tenth/2, dist_unit = "km", transform = TRUE, model = "WGS84"))
+#' 
+#' area_data_sum <- area_data %>% st_drop_geometry() %>%
+#'   group_by(k_labels) %>%
+#'   summarize_at(vars(block_hectares, landscan_population_un, worldpop_population_un), list(sum), na.rm = TRUE) %>%
+#'   ungroup() %>%
+#'   mutate(landscan_pop_density_hectare = landscan_population_un/block_hectares,
+#'          worldpop_pop_density_hectare = worldpop_population_un/block_hectares) %>% 
+#'   replace_na(list(block_pop_density_hectare = 0)) %>%
+#'   mutate(landscan_population_sum = sum(landscan_population_un),
+#'          worldpop_population_sum = sum(worldpop_population_un),
+#'          landscan_population_share = landscan_population_un/landscan_population_sum,
+#'          worldpop_population_share = worldpop_population_un/worldpop_population_sum) 
+#' 
+#' (bar_k_distrib <- ggplot(area_data_sum) +
+#'     geom_bar(aes(y = landscan_population_un, x = k_labels, fill = k_labels), 
+#'              position="dodge",  stat="identity") +
+#'     geom_text(aes(x = k_labels, y =landscan_population_un, 
+#'                   label = ifelse(landscan_population_share > .05, paste0(round(landscan_population_share*100,0),"%"),'')),
+#'               size = 3, vjust =.5, hjust = 1.15, color = 'white', fontface='bold') +
+#'     geom_text(aes(x = k_labels, y = landscan_population_un, 
+#'                   label = ifelse(landscan_population_share <= .05, paste0(round(landscan_population_share*100,0),"%"),'')),
+#'               size = 3, vjust =.5, hjust = -.15, color = "#333333", fontface='bold') +
+#'     coord_flip() +
+#'     scale_fill_manual(values = c(grey2, colorhexes)) +
+#'     scale_y_continuous(breaks = scales::breaks_pretty(n = 6),
+#'                        expand = expansion(mult = c(0, .1)),
+#'                        limits = c(0, max(area_data_sum$landscan_population_un)),
+#'                        labels = label_comma(accuracy = 1L, scale = 0.000001, suffix = "M") ) +
+#'     theme_bw() + 
+#'     labs(y = 'Population', x = '', subtitle = '') + #'Population distribution across k-complexity levels'
+#'     theme(text = element_text(color = "#333333", size = 8, face = 'bold'),
+#'           legend.position= "none",
+#'           plot.margin=unit(c(t=0,r=0,b=10,l=0), "pt"),
+#'           axis.ticks = element_blank(),
+#'           axis.text = element_text(size = 8),
+#'           panel.grid = element_blank(),
+#'           panel.background = element_rect(fill='transparent'),
+#'           panel.border = element_blank(),
+#'           plot.background = element_rect(fill='transparent'),
+#'           axis.title = element_text(face="bold", size = 10),
+#'           plot.subtitle = element_text(size = 11, face="bold", hjust=.5)))
+#' 
+#' plot_k_discrete  + bar_k_distrib
+#'   
+#' #plot_k_discrete + inset_element(bar_k_distrib, left = .65, bottom = .4, right = .95, top = .9) + plot_popdensity_log 
+#' #plot_k_discrete + inset_element(bar_k_distrib, left = .65, bottom = .4, right = .95, top = .9)
 
 # Conurbation -------------------------------------------------------------
 
 # Histogram for a single conurban area
 
-conurbation_id_code = 'conurban_273'
-
-histogram_conurban_data <- generate_crosstabs(data = df_combined_prep %>% filter(class_urban_hierarchy %in% c('1 - Core urban', '2 - Peripheral urban', '3 - Peri-urban')), 
-                                              group_by_cols = c(conurban_cols, 'class_urban_hierarchy'), 
-                                              crosstab_cols = c("k_4"),
-                                              sum_cols = sum_cols, divide_cols = divide_cols, 
-                                              transform_cols = transform_cols, transform_func_list = list(log10 = log_10),
-                                              group_by_agg_cols_list = list('conurbation' = "conurbation_id"),
-                                              group_by_agg_func_list = list(sum = sum, share = share),
-                                              agg_cols = c('landscan_population_un', 'worldpop_population_un'))
-
-k_order <- c('1','2','3','4','5','6','7','8','9','10', "11 to\n15","16 to\n20","21+","Off\nnetwork")
-histogram_conurban_data <- histogram_conurban_data %>% filter(conurbation_id == conurbation_id_code) %>%
-  mutate(group_val = str_wrap(group_val, width=6),
-         group_val = factor(group_val, levels = k_order)) %>%
-  group_by(group_val) %>%
-  mutate(k_sum = sum(landscan_population_un)) %>%
-  ungroup() %>%
-  mutate(share = landscan_population_un / k_sum ) %>%
-  mutate(class_urban_hierarchy = factor(class_urban_hierarchy, levels = c( "1 - Core urban","2 - Peripheral urban","3 - Peri-urban","4 - Non-urban"))) %>%
-  arrange(factor(class_urban_hierarchy, levels = rev(c( "1 - Core urban","2 - Peripheral urban","3 - Peri-urban","4 - Non-urban"))), group_val) %>%
-  group_by(group_val) %>%
-  mutate(pos_id_val = (cumsum(landscan_population_un) - 0.5*landscan_population_un)) %>%
-  ungroup() 
-
-(histogram_conurban <- ggplot() +
-    geom_bar(data = histogram_conurban_data, aes(y = group_val, x = landscan_population_un, fill = class_urban_hierarchy), color = 'white', size = .3, stat="identity") +
-    coord_flip() + 
-    labs(y= 'k-complexity', x = 'Population', fill = '', color =  '', subtitle = 'Lagos-Ikorodu (Nigeria)') + 
-    geom_text(data =  histogram_conurban_data, aes(y = group_val, x = pos_id_val, label = ifelse(landscan_population_un >= 500000, paste0(round(share*100,0),"%"),'')), size = 3, vjust = .5, color = '#333333', fontface='bold') +
-    scale_fill_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
-    scale_x_continuous(expand = c(.005,.005), labels = label_comma(accuracy = 1L, scale =  0.000001, suffix = "M") ) +
-    theme(legend.position = 'bottom', panel.background = element_rect(fill = "white"), axis.ticks = element_line(colour = "grey", size = .2), panel.grid.major = element_line(colour = "grey", size = .2)))
-
-#ggsave(plot = histogram_conurban, filename = paste0(wd_output,'/viz/histogram_conurban.pdf'), width = 6, height = 5.64)
-rm(histogram_conurban_data, histogram_conurban)
-
-# Scatter plots -----------------------------------------------------------
-
-scatter_by_conurbation_4way <- generate_crosstabs(data = df_combined_prep %>% filter(class_urban_hierarchy %in% c('1 - Core urban', '2 - Peripheral urban', '3 - Peri-urban')), 
-                                                  group_by_cols = c(conurban_cols, 'class_urban_hierarchy'), 
-                                                  crosstab_cols = c("k_0"),
-                                                  sum_cols = sum_cols, divide_cols = divide_cols, 
-                                                  transform_cols = transform_cols, transform_func_list = list(log10 = log_10),
-                                                  group_by_agg_cols_list = list('conurbation' = "conurbation_id",
-                                                                                'country' = 'conurbation_country_code'),
-                                                  group_by_agg_func_list = list(sum = sum, share = share),
-                                                  agg_cols = c('landscan_population_un', 'worldpop_population_un'))
-
-scatter_by_conurbation_4way <- scatter_by_conurbation_4way %>%
-  mutate(conurbation_country_name=  (gsub('Democratic Republic of the Congo', 'DR Congo', as.character(conurbation_country_name))),
-         conurbation_area_name_short = gsub('Ambatolampy Tsimahafotsy', 'Ambatolampy', as.character(conurbation_area_name_short))) %>% 
-  #mutate(conurbation_name = paste0(conurbation_area_name_short,', ',conurbation_country_name)) %>%
-  #mutate(conurbation_first_name = conurbation_area_name_short) %>%
-  mutate(conurbation_country_name =  (gsub('–', '-', as.character(conurbation_country_name)))) %>%
-  mutate(conurbation_country_code =  (gsub('–', '-', as.character(conurbation_country_code)))) %>%
-  mutate(conurbation_name = paste0(conurbation_area_name_short,', ',conurbation_country_code)) %>%
-  separate(col = conurbation_area_name_short, sep = '-', into = c('conurbation_first_name'), extra = 'drop') %>%
-  mutate(conurbation_name_2line = paste0(conurbation_first_name,'\n',conurbation_country_code)) %>%
-  filter(agg_sum_landscan_population_un_group_by_conurbation >= 2000000) %>%
-  mutate(class_urban_hierarchy = factor(class_urban_hierarchy, levels = c( "1 - Core urban","2 - Peripheral urban","3 - Peri-urban","4 - Non-urban"))) %>% 
-  mutate(k_reweight = landscan_population_un*k_complexity_weighted_landscan_un) %>%
-  group_by(conurbation_country_code) %>%
-  mutate(k_reweight = sum(k_reweight)) %>%
-  ungroup() %>%
-  mutate(k_reweight = k_reweight/agg_sum_landscan_population_un_group_by_country) 
-
-(scatter_by_conurbation_4way_1 <- ggplot() +
-    geom_point(data = scatter_by_conurbation_4way, aes(x = reorder(conurbation_name, agg_sum_landscan_population_un_group_by_conurbation), y = landscan_population_un_log10, fill = class_urban_hierarchy, color = class_urban_hierarchy, size = k_complexity_weighted_landscan_un), alpha = .75) +
-    scale_size(range = c(1,10)) + 
-    geom_text(data = scatter_by_conurbation_4way, aes(x = reorder(conurbation_name, agg_sum_landscan_population_un_group_by_conurbation), y = landscan_population_un_log10, label = round(k_complexity_weighted_landscan_un , 1)), size = 3, vjust = .5, color = '#333333', fontface='bold', check_overlap = TRUE) +
-    scale_y_continuous(oob = scales::squish, breaks= c(1,2,3,4,5,6,7,8,9), labels = c('0',"100","1K","10K","100K","1M","10M","100M","1B"))+
-    scale_fill_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
-    scale_color_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
-    labs(x= '', y = 'Population', size = 'Average block complexity', fill = '', color =  '') +
-    guides(color = guide_legend(override.aes = list(size = 6))) +
-    coord_flip() +
-    guides(color = guide_legend(override.aes = list(size = 8, alpha = 1))) +
-    theme(legend.key = element_rect(fill = NA), legend.spacing.y = unit(0, "cm"),
-          text = element_text(size = 13), legend.position = 'bottom', 
-          legend.box = 'vertical', legend.box.just = "center"))
-#theme(legend.position = 'bottom', legend.key=element_blank()))
-
-(scatter_by_conurbation_4way_2 <- ggplot() +
-    geom_point(data = scatter_by_conurbation_4way, aes(x =  reorder(conurbation_name, k_reweight), y = k_complexity_weighted_landscan_un, fill = class_urban_hierarchy, color = class_urban_hierarchy, size = landscan_population_un), alpha = .75) +
-    geom_text(data = scatter_by_conurbation_4way, aes(x =  reorder(conurbation_name, k_reweight ), y =  k_complexity_weighted_landscan_un, label = ifelse(landscan_population_un >= 100000, paste0(round(landscan_population_un/1000000,1),'M'),'' ) ), size = 3, vjust = .5, color = '#333333', fontface='bold', check_overlap = TRUE) +
-    labs(x= '', y = 'Average K-complexity', size = 'Population', fill = '', color =  '') +
-    coord_flip() +
-    scale_fill_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
-    scale_color_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
-    scale_size_continuous(range = c(1,10), labels = label_comma(accuracy = 1L, scale =  0.000001, suffix = "M") ) +
-    guides(color = guide_legend(override.aes = list(size = 8, alpha = 1))) +
-    theme(legend.key = element_rect(fill = NA), legend.spacing.y = unit(0, "cm"),
-          text = element_text(size = 13), legend.position = 'bottom', 
-          legend.box = 'vertical', legend.box.just = "center"))
-#guides(color = guide_legend(override.aes = list(size = 6))) +
-#theme(legend.position = 'bottom', legend.key=element_blank()))
-
-(scatter_by_conurbation_4way_3 <- ggplot() +
-    geom_point(data = scatter_by_conurbation_4way %>% filter(agg_sum_landscan_population_un_group_by_conurbation >= 50000), 
-               aes(x = log10(k_complexity_weighted_landscan_un), y = log10(landscan_population_un), fill = class_urban_hierarchy, color = class_urban_hierarchy, size = landscan_population_un ), alpha = .7) +
-    coord_flip() +
-    labs(x= 'Average block complexity', y = 'Population', size = '', fill = '', color =  '') +
-    scale_fill_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
-    scale_color_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
-    scale_size(range = c(2, 20), breaks = c(10000,100000,1000000,10000000), labels = c('10K','100K','1M','10M')) +
-    scale_x_continuous(oob = scales::squish, breaks= c(0, 0.30103, 0.4771213, 0.60206, 0.69897, 0.7781513, 0.845098, 0.90309, 0.9542425, 1,1.041393,1.079181,1.113943,1.146128,1.176091,1.20412,1.230449,1.255273,1.278754,1.30103,1.322219,1.342423,1.361728,1.380211,1.39794), labels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25) )+
-    scale_y_continuous(oob = scales::squish, breaks= c(1,2,3,4,5,6,7,8,9), labels = c('0',"100","1K","10K","100K","1M","10M","100M","1B"))+
-    geom_text_repel(data = scatter_by_conurbation_4way %>% filter(agg_sum_landscan_population_un_group_by_conurbation >= 50000), seed = 1, segment.curvature = -0.1, point.padding = 0, box.padding = 0.4, max.iter = 30000, segment.square  = FALSE, segment.inflect = FALSE, min.segment.length = .2, max.overlaps = Inf, force = .5, force_pull = 10, 
-                    aes(x = log10(k_complexity_weighted_landscan_un), y = log10(landscan_population_un), label = conurbation_name_2line ), size = 3, vjust =.5, color = '#333333', fontface='bold') + 
-    guides(color = guide_legend(override.aes = list(size = 6, alpha =1))) +
-    theme(legend.key = element_rect(fill = NA), panel.background = element_rect(fill = "white"), 
-          legend.spacing.y = unit(0, "cm"),
-          #legend.margin=margin(t=2,r=0,b=2,l=0),
-          #legend.box.margin=margin(0,0,0,0),
-          axis.ticks = element_line(colour = "grey", size = .2), panel.grid.major = element_line(colour = "grey", size = .2), 
-          text = element_text(size = 13), legend.position = 'bottom', legend.box = 'vertical', legend.box.just = "center"))
-
-#ggsave(plot = scatter_by_conurbation_4way_1, filename = paste0(wd_output,'/viz/scatter_population_conurbations.pdf'))
-#ggsave(plot = scatter_by_conurbation_4way_2, filename = paste0(wd_output,'/viz/scatter_complexity_conurbations.pdf'))
-ggsave(plot = scatter_by_conurbation_4way_3, filename = paste0(wd_output,'/viz/scatter_population_vs_complexity_conurbations.pdf'), width = 14, height = 12)
-rm(scatter_by_conurbation_4way, scatter_by_conurbation_4way_1, scatter_by_conurbation_4way_2, scatter_by_conurbation_4way_3)
+# conurbation_id_code = 'conurban_273'
+# 
+# histogram_conurban_data <- generate_crosstabs(data = df_combined_prep %>% filter(class_urban_hierarchy %in% c('1 - Core urban', '2 - Peripheral urban', '3 - Peri-urban')), 
+#                                               group_by_cols = c(conurban_cols, 'class_urban_hierarchy'), 
+#                                               crosstab_cols = c("k_4"),
+#                                               sum_cols = sum_cols, divide_cols = divide_cols, 
+#                                               transform_cols = transform_cols, transform_func_list = list(log10 = log_10),
+#                                               group_by_agg_cols_list = list('conurbation' = "conurbation_id"),
+#                                               group_by_agg_func_list = list(sum = sum, share = share),
+#                                               agg_cols = c('landscan_population_un', 'worldpop_population_un'))
+# 
+# k_order <- c('1','2','3','4','5','6','7','8','9','10', "11 to\n15","16 to\n20","21+","Off\nnetwork")
+# histogram_conurban_data <- histogram_conurban_data %>% filter(conurbation_id == conurbation_id_code) %>%
+#   mutate(group_val = str_wrap(group_val, width=6),
+#          group_val = factor(group_val, levels = k_order)) %>%
+#   group_by(group_val) %>%
+#   mutate(k_sum = sum(landscan_population_un)) %>%
+#   ungroup() %>%
+#   mutate(share = landscan_population_un / k_sum ) %>%
+#   mutate(class_urban_hierarchy = factor(class_urban_hierarchy, levels = c( "1 - Core urban","2 - Peripheral urban","3 - Peri-urban","4 - Non-urban"))) %>%
+#   arrange(factor(class_urban_hierarchy, levels = rev(c( "1 - Core urban","2 - Peripheral urban","3 - Peri-urban","4 - Non-urban"))), group_val) %>%
+#   group_by(group_val) %>%
+#   mutate(pos_id_val = (cumsum(landscan_population_un) - 0.5*landscan_population_un)) %>%
+#   ungroup() 
+# 
+# (histogram_conurban <- ggplot() +
+#     geom_bar(data = histogram_conurban_data, aes(y = group_val, x = landscan_population_un, fill = class_urban_hierarchy), color = 'white', size = .3, stat="identity") +
+#     coord_flip() + 
+#     labs(y= 'k-complexity', x = 'Population', fill = '', color =  '', subtitle = 'Lagos-Ikorodu (Nigeria)') + 
+#     geom_text(data =  histogram_conurban_data, aes(y = group_val, x = pos_id_val, label = ifelse(landscan_population_un >= 500000, paste0(round(share*100,0),"%"),'')), size = 3, vjust = .5, color = '#333333', fontface='bold') +
+#     scale_fill_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
+#     scale_x_continuous(expand = c(.005,.005), labels = label_comma(accuracy = 1L, scale =  0.000001, suffix = "M") ) +
+#     theme(legend.position = 'bottom', panel.background = element_rect(fill = "white"), axis.ticks = element_line(colour = "grey", size = .2), panel.grid.major = element_line(colour = "grey", size = .2)))
+# 
+# #ggsave(plot = histogram_conurban, filename = paste0(wd_output,'/viz/histogram_conurban.pdf'), width = 6, height = 5.64)
+# rm(histogram_conurban_data, histogram_conurban)
+# 
+# # Scatter plots -----------------------------------------------------------
+# 
+# scatter_by_conurbation_4way <- generate_crosstabs(data = df_combined_prep %>% filter(class_urban_hierarchy %in% c('1 - Core urban', '2 - Peripheral urban', '3 - Peri-urban')), 
+#                                                   group_by_cols = c(conurban_cols, 'class_urban_hierarchy'), 
+#                                                   crosstab_cols = c("k_0"),
+#                                                   sum_cols = sum_cols, divide_cols = divide_cols, 
+#                                                   transform_cols = transform_cols, transform_func_list = list(log10 = log_10),
+#                                                   group_by_agg_cols_list = list('conurbation' = "conurbation_id",
+#                                                                                 'country' = 'conurbation_country_code'),
+#                                                   group_by_agg_func_list = list(sum = sum, share = share),
+#                                                   agg_cols = c('landscan_population_un', 'worldpop_population_un'))
+# 
+# scatter_by_conurbation_4way <- scatter_by_conurbation_4way %>%
+#   mutate(conurbation_country_name=  (gsub('Democratic Republic of the Congo', 'DR Congo', as.character(conurbation_country_name))),
+#          conurbation_area_name_short = gsub('Ambatolampy Tsimahafotsy', 'Ambatolampy', as.character(conurbation_area_name_short))) %>% 
+#   #mutate(conurbation_name = paste0(conurbation_area_name_short,', ',conurbation_country_name)) %>%
+#   #mutate(conurbation_first_name = conurbation_area_name_short) %>%
+#   mutate(conurbation_country_name =  (gsub('–', '-', as.character(conurbation_country_name)))) %>%
+#   mutate(conurbation_country_code =  (gsub('–', '-', as.character(conurbation_country_code)))) %>%
+#   mutate(conurbation_name = paste0(conurbation_area_name_short,', ',conurbation_country_code)) %>%
+#   separate(col = conurbation_area_name_short, sep = '-', into = c('conurbation_first_name'), extra = 'drop') %>%
+#   mutate(conurbation_name_2line = paste0(conurbation_first_name,'\n',conurbation_country_code)) %>%
+#   filter(agg_sum_landscan_population_un_group_by_conurbation >= 2000000) %>%
+#   mutate(class_urban_hierarchy = factor(class_urban_hierarchy, levels = c( "1 - Core urban","2 - Peripheral urban","3 - Peri-urban","4 - Non-urban"))) %>% 
+#   mutate(k_reweight = landscan_population_un*k_complexity_weighted_landscan_un) %>%
+#   group_by(conurbation_country_code) %>%
+#   mutate(k_reweight = sum(k_reweight)) %>%
+#   ungroup() %>%
+#   mutate(k_reweight = k_reweight/agg_sum_landscan_population_un_group_by_country) 
+# 
+# (scatter_by_conurbation_4way_1 <- ggplot() +
+#     geom_point(data = scatter_by_conurbation_4way, aes(x = reorder(conurbation_name, agg_sum_landscan_population_un_group_by_conurbation), y = landscan_population_un_log10, fill = class_urban_hierarchy, color = class_urban_hierarchy, size = k_complexity_weighted_landscan_un), alpha = .75) +
+#     scale_size(range = c(1,10)) + 
+#     geom_text(data = scatter_by_conurbation_4way, aes(x = reorder(conurbation_name, agg_sum_landscan_population_un_group_by_conurbation), y = landscan_population_un_log10, label = round(k_complexity_weighted_landscan_un , 1)), size = 3, vjust = .5, color = '#333333', fontface='bold', check_overlap = TRUE) +
+#     scale_y_continuous(oob = scales::squish, breaks= c(1,2,3,4,5,6,7,8,9), labels = c('0',"100","1K","10K","100K","1M","10M","100M","1B"))+
+#     scale_fill_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
+#     scale_color_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
+#     labs(x= '', y = 'Population', size = 'Average block complexity', fill = '', color =  '') +
+#     guides(color = guide_legend(override.aes = list(size = 6))) +
+#     coord_flip() +
+#     guides(color = guide_legend(override.aes = list(size = 8, alpha = 1))) +
+#     theme(legend.key = element_rect(fill = NA), legend.spacing.y = unit(0, "cm"),
+#           text = element_text(size = 13), legend.position = 'bottom', 
+#           legend.box = 'vertical', legend.box.just = "center"))
+# #theme(legend.position = 'bottom', legend.key=element_blank()))
+# 
+# (scatter_by_conurbation_4way_2 <- ggplot() +
+#     geom_point(data = scatter_by_conurbation_4way, aes(x =  reorder(conurbation_name, k_reweight), y = k_complexity_weighted_landscan_un, fill = class_urban_hierarchy, color = class_urban_hierarchy, size = landscan_population_un), alpha = .75) +
+#     geom_text(data = scatter_by_conurbation_4way, aes(x =  reorder(conurbation_name, k_reweight ), y =  k_complexity_weighted_landscan_un, label = ifelse(landscan_population_un >= 100000, paste0(round(landscan_population_un/1000000,1),'M'),'' ) ), size = 3, vjust = .5, color = '#333333', fontface='bold', check_overlap = TRUE) +
+#     labs(x= '', y = 'Average K-complexity', size = 'Population', fill = '', color =  '') +
+#     coord_flip() +
+#     scale_fill_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
+#     scale_color_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
+#     scale_size_continuous(range = c(1,10), labels = label_comma(accuracy = 1L, scale =  0.000001, suffix = "M") ) +
+#     guides(color = guide_legend(override.aes = list(size = 8, alpha = 1))) +
+#     theme(legend.key = element_rect(fill = NA), legend.spacing.y = unit(0, "cm"),
+#           text = element_text(size = 13), legend.position = 'bottom', 
+#           legend.box = 'vertical', legend.box.just = "center"))
+# #guides(color = guide_legend(override.aes = list(size = 6))) +
+# #theme(legend.position = 'bottom', legend.key=element_blank()))
+# 
+# (scatter_by_conurbation_4way_3 <- ggplot() +
+#     geom_point(data = scatter_by_conurbation_4way %>% filter(agg_sum_landscan_population_un_group_by_conurbation >= 50000), 
+#                aes(x = log10(k_complexity_weighted_landscan_un), y = log10(landscan_population_un), fill = class_urban_hierarchy, color = class_urban_hierarchy, size = landscan_population_un ), alpha = .7) +
+#     coord_flip() +
+#     labs(x= 'Average block complexity', y = 'Population', size = '', fill = '', color =  '') +
+#     scale_fill_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
+#     scale_color_manual(values = c('#4D96FF','#6BCB77','#FFD93D','#FF6B6B')) +
+#     scale_size(range = c(2, 20), breaks = c(10000,100000,1000000,10000000), labels = c('10K','100K','1M','10M')) +
+#     scale_x_continuous(oob = scales::squish, breaks= c(0, 0.30103, 0.4771213, 0.60206, 0.69897, 0.7781513, 0.845098, 0.90309, 0.9542425, 1,1.041393,1.079181,1.113943,1.146128,1.176091,1.20412,1.230449,1.255273,1.278754,1.30103,1.322219,1.342423,1.361728,1.380211,1.39794), labels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25) )+
+#     scale_y_continuous(oob = scales::squish, breaks= c(1,2,3,4,5,6,7,8,9), labels = c('0',"100","1K","10K","100K","1M","10M","100M","1B"))+
+#     geom_text_repel(data = scatter_by_conurbation_4way %>% filter(agg_sum_landscan_population_un_group_by_conurbation >= 50000), seed = 1, segment.curvature = -0.1, point.padding = 0, box.padding = 0.4, max.iter = 30000, segment.square  = FALSE, segment.inflect = FALSE, min.segment.length = .2, max.overlaps = Inf, force = .5, force_pull = 10, 
+#                     aes(x = log10(k_complexity_weighted_landscan_un), y = log10(landscan_population_un), label = conurbation_name_2line ), size = 3, vjust =.5, color = '#333333', fontface='bold') + 
+#     guides(color = guide_legend(override.aes = list(size = 6, alpha =1))) +
+#     theme(legend.key = element_rect(fill = NA), panel.background = element_rect(fill = "white"), 
+#           legend.spacing.y = unit(0, "cm"),
+#           #legend.margin=margin(t=2,r=0,b=2,l=0),
+#           #legend.box.margin=margin(0,0,0,0),
+#           axis.ticks = element_line(colour = "grey", size = .2), panel.grid.major = element_line(colour = "grey", size = .2), 
+#           text = element_text(size = 13), legend.position = 'bottom', legend.box = 'vertical', legend.box.just = "center"))
+# 
+# #ggsave(plot = scatter_by_conurbation_4way_1, filename = paste0(wd_output,'/viz/scatter_population_conurbations.pdf'))
+# #ggsave(plot = scatter_by_conurbation_4way_2, filename = paste0(wd_output,'/viz/scatter_complexity_conurbations.pdf'))
+# ggsave(plot = scatter_by_conurbation_4way_3, filename = paste0(wd_output,'/viz/scatter_population_vs_complexity_conurbations.pdf'), width = 14, height = 12)
+# rm(scatter_by_conurbation_4way, scatter_by_conurbation_4way_1, scatter_by_conurbation_4way_2, scatter_by_conurbation_4way_3)
 
 

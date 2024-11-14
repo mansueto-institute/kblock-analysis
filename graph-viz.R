@@ -89,7 +89,11 @@ alpha_param = .3
 ggsave(plot = vizgl, filename = paste0(wd_output,'/complexity-graph.pdf'),
        width = 12.3, height = 5)
 
-ggsave(plot = vizgraph, filename = paste0(wd_output,'/complexity-graph_parta.pdf'),
+(vizgraph_e <- vizgraph &
+    plot_annotation(tag_levels = list(c("E"))) & 
+    theme(plot.tag = element_text(size = 13)))
+
+ggsave(plot = vizgraph_e, filename = paste0(wd_output,'/complexity-graph_parte.pdf'),
        width = 6.15, height = 5)
 
 
