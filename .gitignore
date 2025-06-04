@@ -8,6 +8,7 @@ __pycache__/
 /data/complexity-analysis
 /data/dhs-analysis
 /data/sdi-analysis
+/data/bldg-area-analysis
 /data/viz
 /graph-viz
 /data/africa_data.parquet
