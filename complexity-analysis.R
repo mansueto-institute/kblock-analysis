@@ -95,9 +95,10 @@ df_combined <- df_combined %>%
 
 group_cols = c("k_5", "k_4", "k_3", "k_2", "k_1", "k_0", "country_code", "country_name", "continent", "area_type", "class_urban_hierarchy", "class_urban_periurban_nonurban", "class_urban_nonurban", "urban_id", "urban_center_name", "urban_country_code", "urban_country_name", "conurbation_id", "conurbation_area_name_short", "conurbation_country_code", "conurbation_country_name", "agglosid", "agglosname", "metropole", "urban_layer_code",
                'class_urban_paper')
-collapse_cols = c("block_count", "block_area_m2", "block_hectares", "block_area_km2", "block_perimeter_meters", "building_area_m2", "building_count", "average_building_area_m2", "building_to_block_area_ratio", "parcel_count", "average_parcel_area_m2", "k_complexity_weighted_landscan_un", "k_complexity_weighted_worldpop_un", "landscan_population", "landscan_population_un", "landscan_population_un_density_hectare", "landscan_population_un_per_building_area_m2", "landscan_population_un_per_building", "worldpop_population", "worldpop_population_un", "worldpop_population_un_density_hectare", "worldpop_population_un_per_building_area_m2", "worldpop_population_un_per_building", "on_network_street_length_meters", "off_network_street_length_meters", "nearest_external_street_meters", 
-                  "bldg_area_count_bin_01_0.50__log10_3.2", "bldg_area_count_bin_02_0.75__log10_5.6", "bldg_area_count_bin_03_1.00__log10_10", "bldg_area_count_bin_04_1.25__log10_17.8", "bldg_area_count_bin_05_1.50__log10_31.6", "bldg_area_count_bin_06_1.75__log10_56.2", "bldg_area_count_bin_07_2.00__log10_100", "bldg_area_count_bin_08_2.25__log10_177.8", "bldg_area_count_bin_09_2.50__log10_316.2", "bldg_area_count_bin_10_2.75__log10_562.3", "bldg_area_count_bin_11_3.00__log10_1000", "bldg_area_count_bin_12_3.25__log10_1778.3", "bldg_area_count_bin_13_3.50__log10_3162.3", "bldg_area_count_bin_14_3.75__log10_5623.4", "bldg_area_count_bin_15_4.00__log10_10000", 
-                  "bldg_area_m2_bin_01_0.50__log10_3.2", "bldg_area_m2_bin_02_0.75__log10_5.6", "bldg_area_m2_bin_03_1.00__log10_10", "bldg_area_m2_bin_04_1.25__log10_17.8", "bldg_area_m2_bin_05_1.50__log10_31.6", "bldg_area_m2_bin_06_1.75__log10_56.2", "bldg_area_m2_bin_07_2.00__log10_100", "bldg_area_m2_bin_08_2.25__log10_177.8", "bldg_area_m2_bin_09_2.50__log10_316.2", "bldg_area_m2_bin_10_2.75__log10_562.3", "bldg_area_m2_bin_11_3.00__log10_1000", "bldg_area_m2_bin_12_3.25__log10_1778.3", "bldg_area_m2_bin_13_3.50__log10_3162.3", "bldg_area_m2_bin_14_3.75__log10_5623.4", "bldg_area_m2_bin_15_4.00__log10_10000")
+collapse_cols = c("block_count", "block_area_m2", "block_hectares", "block_area_km2", "block_perimeter_meters", "building_area_m2", "building_count", "average_building_area_m2", "building_to_block_area_ratio", "parcel_count", "average_parcel_area_m2", "k_complexity_weighted_landscan_un", "k_complexity_weighted_worldpop_un", 
+                  "landscan_population", "landscan_population_un", "landscan_population_un_density_hectare", "landscan_population_un_per_building_area_m2", "landscan_population_un_per_building", "worldpop_population", "worldpop_population_un", "worldpop_population_un_density_hectare", "worldpop_population_un_per_building_area_m2", "worldpop_population_un_per_building", "on_network_street_length_meters", "off_network_street_length_meters", "nearest_external_street_meters")
+                  #"bldg_area_count_bin_01_0.50__log10_3.2", "bldg_area_count_bin_02_0.75__log10_5.6", "bldg_area_count_bin_03_1.00__log10_10", "bldg_area_count_bin_04_1.25__log10_17.8", "bldg_area_count_bin_05_1.50__log10_31.6", "bldg_area_count_bin_06_1.75__log10_56.2", "bldg_area_count_bin_07_2.00__log10_100", "bldg_area_count_bin_08_2.25__log10_177.8", "bldg_area_count_bin_09_2.50__log10_316.2", "bldg_area_count_bin_10_2.75__log10_562.3", "bldg_area_count_bin_11_3.00__log10_1000", "bldg_area_count_bin_12_3.25__log10_1778.3", "bldg_area_count_bin_13_3.50__log10_3162.3", "bldg_area_count_bin_14_3.75__log10_5623.4", "bldg_area_count_bin_15_4.00__log10_10000", 
+                  #"bldg_area_m2_bin_01_0.50__log10_3.2", "bldg_area_m2_bin_02_0.75__log10_5.6", "bldg_area_m2_bin_03_1.00__log10_10", "bldg_area_m2_bin_04_1.25__log10_17.8", "bldg_area_m2_bin_05_1.50__log10_31.6", "bldg_area_m2_bin_06_1.75__log10_56.2", "bldg_area_m2_bin_07_2.00__log10_100", "bldg_area_m2_bin_08_2.25__log10_177.8", "bldg_area_m2_bin_09_2.50__log10_316.2", "bldg_area_m2_bin_10_2.75__log10_562.3", "bldg_area_m2_bin_11_3.00__log10_1000", "bldg_area_m2_bin_12_3.25__log10_1778.3", "bldg_area_m2_bin_13_3.50__log10_3162.3", "bldg_area_m2_bin_14_3.75__log10_5623.4", "bldg_area_m2_bin_15_4.00__log10_10000")
 
 # Reduce the row count before aggregation
 df_combined_prep <- df_combined %>% 
@@ -114,14 +115,14 @@ gc()
 file_labels = data.frame(
   column_names = c("group_var", "group_val", "continent", "average_building_area_m2", "average_parcel_area_m2", "average_buildings_per_hectare", "building_to_block_area_ratio", "k_complexity_weighted_landscan_un", "k_complexity_weighted_worldpop_un", "landscan_population_un_density_hectare", "landscan_population_un_per_building_area_m2", "landscan_population_un_per_building", "worldpop_population_un_density_hectare", "worldpop_population_un_per_building_area_m2", "worldpop_population_un_per_building",
                    "block_count", "block_area_m2", "block_hectares", "block_area_km2", "block_perimeter_meters", "building_area_m2", "building_count", "parcel_count", "landscan_population", "landscan_population_un", "worldpop_population", "worldpop_population_un", "on_network_street_length_meters", "off_network_street_length_meters", "nearest_external_street_meters",
-                   "bldg_area_count_bin_01_0.50__log10_3.2", "bldg_area_count_bin_02_0.75__log10_5.6", "bldg_area_count_bin_03_1.00__log10_10", "bldg_area_count_bin_04_1.25__log10_17.8", "bldg_area_count_bin_05_1.50__log10_31.6", "bldg_area_count_bin_06_1.75__log10_56.2", "bldg_area_count_bin_07_2.00__log10_100", "bldg_area_count_bin_08_2.25__log10_177.8", "bldg_area_count_bin_09_2.50__log10_316.2", "bldg_area_count_bin_10_2.75__log10_562.3", "bldg_area_count_bin_11_3.00__log10_1000", "bldg_area_count_bin_12_3.25__log10_1778.3", "bldg_area_count_bin_13_3.50__log10_3162.3", "bldg_area_count_bin_14_3.75__log10_5623.4", "bldg_area_count_bin_15_4.00__log10_10000",
-                   "bldg_area_m2_bin_01_0.50__log10_3.2", "bldg_area_m2_bin_02_0.75__log10_5.6", "bldg_area_m2_bin_03_1.00__log10_10", "bldg_area_m2_bin_04_1.25__log10_17.8", "bldg_area_m2_bin_05_1.50__log10_31.6", "bldg_area_m2_bin_06_1.75__log10_56.2", "bldg_area_m2_bin_07_2.00__log10_100", "bldg_area_m2_bin_08_2.25__log10_177.8", "bldg_area_m2_bin_09_2.50__log10_316.2", "bldg_area_m2_bin_10_2.75__log10_562.3", "bldg_area_m2_bin_11_3.00__log10_1000", "bldg_area_m2_bin_12_3.25__log10_1778.3", "bldg_area_m2_bin_13_3.50__log10_3162.3", "bldg_area_m2_bin_14_3.75__log10_5623.4", "bldg_area_m2_bin_15_4.00__log10_10000",
+                   #"bldg_area_count_bin_01_0.50__log10_3.2", "bldg_area_count_bin_02_0.75__log10_5.6", "bldg_area_count_bin_03_1.00__log10_10", "bldg_area_count_bin_04_1.25__log10_17.8", "bldg_area_count_bin_05_1.50__log10_31.6", "bldg_area_count_bin_06_1.75__log10_56.2", "bldg_area_count_bin_07_2.00__log10_100", "bldg_area_count_bin_08_2.25__log10_177.8", "bldg_area_count_bin_09_2.50__log10_316.2", "bldg_area_count_bin_10_2.75__log10_562.3", "bldg_area_count_bin_11_3.00__log10_1000", "bldg_area_count_bin_12_3.25__log10_1778.3", "bldg_area_count_bin_13_3.50__log10_3162.3", "bldg_area_count_bin_14_3.75__log10_5623.4", "bldg_area_count_bin_15_4.00__log10_10000",
+                   #"bldg_area_m2_bin_01_0.50__log10_3.2", "bldg_area_m2_bin_02_0.75__log10_5.6", "bldg_area_m2_bin_03_1.00__log10_10", "bldg_area_m2_bin_04_1.25__log10_17.8", "bldg_area_m2_bin_05_1.50__log10_31.6", "bldg_area_m2_bin_06_1.75__log10_56.2", "bldg_area_m2_bin_07_2.00__log10_100", "bldg_area_m2_bin_08_2.25__log10_177.8", "bldg_area_m2_bin_09_2.50__log10_316.2", "bldg_area_m2_bin_10_2.75__log10_562.3", "bldg_area_m2_bin_11_3.00__log10_1000", "bldg_area_m2_bin_12_3.25__log10_1778.3", "bldg_area_m2_bin_13_3.50__log10_3162.3", "bldg_area_m2_bin_14_3.75__log10_5623.4", "bldg_area_m2_bin_15_4.00__log10_10000",
                    "landscan_population_un_log10", "landscan_population_un_density_hectare_log10", "worldpop_population_un_log10", "worldpop_population_un_density_hectare_log10",'agg_sum_landscan_population_un_group_by_agglos', 'agg_share_landscan_population_un_group_by_agglos', 'agg_sum_worldpop_population_un_group_by_agglos', 'agg_share_worldpop_population_un_group_by_agglos'),
 
   column_labels = c("Block complexity aggregation level (also called k-complexity)", "Block complexity value (also called k-complexity)", "Continent", "Average building footprint area per block (meters squared)", "Average parcel area per block (meters squared)", "Average buildings per hectare", "Building footprint area to block area ratio", "Average population weighted block complexity (LandScan 2020)", "Average population weighted block complexity (LandScan 2020)", "Population per hectare (LandScan 2020)", "Population per building footprint area (meters squared, LandScan 2020)", "Average building population (LandScan 2020)", "Population per hectare (WorldPop 2020)", "Population per building footprint area (meters squared, WorldPop 2020)", "Average building population (WorldPop 2020)",
                     "Block count", "Block area (meters squared)", "Block area in hectares", "Block area (kilometers squared)", "Block perimeter (meters)", "Building footprint area (meters squared)", "Building count", "Parcel count", "Population (LandScan 2020)", "Population (LandScan 2020, UN adjusted)", "Population (WorldPop 2020)", "Population (WorldPop 2020, UN adjusted)", "Length of internal streets within blocks connected to external street network (meters)", "Length of internal streets within blocks not connected to external street network (meters)", "Distance between block and external streets. Applies only in situations when block is disconnected from street networks (meters)",
-                    "Count of buildings with area under 5.6 meters squared", "Count of buildings with area 5.6 to 10 meters squared", "Count of buildings with area 10 to 17.8 meters squared", "Count of buildings with area 17.8 to 31.6 meters squared", "Count of buildings with area 31.6 to 56.2 meters squared", "Count of buildings with area 56.2 to 100 meters squared", "Count of buildings with area 100 to 177.8 meters squared", "Count of buildings with area 177.8 to 316.2 meters squared", "Count of buildings with area 316.2 to 562.3 meters squared", "Count of buildings with area 562.3 to 1,000 meters squared", "Count of buildings with area 1,000 to 1,778.3 meters squared", "Count of buildings with area 1,778.3 to 3,162.3 meters squared", "Count of buildings with area 3,162.3 to 5,623.4 meters squared", "Count of buildings with area 5,623.4 to 10,000 meters squared", "Count of buildings with area over 10,000 meters squared",
-                    "Cumulative area of buildings under 5.6 meters squared", "Cumulative area of buildings 5.6 to 10 meters squared", "Cumulative area of buildings 10 to 17.8 meters squared", "Cumulative area of buildings 17.8 to 31.6 meters squared", "Cumulative area of buildings 31.6 to 56.2 meters squared", "Cumulative area of buildings 56.2 to 100 meters squared", "Cumulative area of buildings 100 to 177.8 meters squared", "Cumulative area of buildings 177.8 to 316.2 meters squared", "Cumulative area of buildings 316.2 to 562.3 meters squared", "Cumulative area of buildings 562.3 to 1,000 meters squared", "Cumulative area of buildings 1,000 to 1,778.3 meters squared", "Cumulative area of buildings 1,778.3 to 3,162.3 meters squared", "Cumulative area of buildings 3,162.3 to 5,623.4 meters squared", "Cumulative area of buildings 5,623.4 to 10,000 meters squared", "Cumulative area of buildings over 10,000 meters squared",
+                    #"Count of buildings with area under 5.6 meters squared", "Count of buildings with area 5.6 to 10 meters squared", "Count of buildings with area 10 to 17.8 meters squared", "Count of buildings with area 17.8 to 31.6 meters squared", "Count of buildings with area 31.6 to 56.2 meters squared", "Count of buildings with area 56.2 to 100 meters squared", "Count of buildings with area 100 to 177.8 meters squared", "Count of buildings with area 177.8 to 316.2 meters squared", "Count of buildings with area 316.2 to 562.3 meters squared", "Count of buildings with area 562.3 to 1,000 meters squared", "Count of buildings with area 1,000 to 1,778.3 meters squared", "Count of buildings with area 1,778.3 to 3,162.3 meters squared", "Count of buildings with area 3,162.3 to 5,623.4 meters squared", "Count of buildings with area 5,623.4 to 10,000 meters squared", "Count of buildings with area over 10,000 meters squared",
+                    #"Cumulative area of buildings under 5.6 meters squared", "Cumulative area of buildings 5.6 to 10 meters squared", "Cumulative area of buildings 10 to 17.8 meters squared", "Cumulative area of buildings 17.8 to 31.6 meters squared", "Cumulative area of buildings 31.6 to 56.2 meters squared", "Cumulative area of buildings 56.2 to 100 meters squared", "Cumulative area of buildings 100 to 177.8 meters squared", "Cumulative area of buildings 177.8 to 316.2 meters squared", "Cumulative area of buildings 316.2 to 562.3 meters squared", "Cumulative area of buildings 562.3 to 1,000 meters squared", "Cumulative area of buildings 1,000 to 1,778.3 meters squared", "Cumulative area of buildings 1,778.3 to 3,162.3 meters squared", "Cumulative area of buildings 3,162.3 to 5,623.4 meters squared", "Cumulative area of buildings 5,623.4 to 10,000 meters squared", "Cumulative area of buildings over 10,000 meters squared",
                     "Log base 10 population (LandScan 2020, UN adjusted)", "Log base 10 population per hectare (LandScan 2020, UN adjusted)", "Log base 10 population (WorldPop 2020, UN adjusted)", "Log base 10 population per hectare (WorldPop 2020, UN adjusted)", 'Aggregate sum of population (LandScan 2020) by {geographic grouping}', 'Share of population (LandScan 2020) by {geographic grouping}', 'Aggregate sum of population (WorldPop 2020) by {geographic grouping}', 'Share of population (WorldPop 2020) by {geographic grouping}'))
 
 file_group_labels = data.frame(
@@ -138,9 +139,9 @@ write_xlsx(list('dictionary_labels' = file_labels, 'dictionary_levels' = file_gr
 sum_cols = c("k_complexity_weighted_landscan_un", "k_complexity_weighted_worldpop_un", 
              "block_count", "block_area_m2", "block_hectares", "block_area_km2", "block_perimeter_meters", "building_area_m2", 
              "building_count", "parcel_count", "landscan_population", "landscan_population_un", "worldpop_population", "worldpop_population_un", 
-             "on_network_street_length_meters", "off_network_street_length_meters", "nearest_external_street_meters", 
-             "bldg_area_count_bin_01_0.50__log10_3.2", "bldg_area_count_bin_02_0.75__log10_5.6", "bldg_area_count_bin_03_1.00__log10_10", "bldg_area_count_bin_04_1.25__log10_17.8", "bldg_area_count_bin_05_1.50__log10_31.6", "bldg_area_count_bin_06_1.75__log10_56.2", "bldg_area_count_bin_07_2.00__log10_100", "bldg_area_count_bin_08_2.25__log10_177.8", "bldg_area_count_bin_09_2.50__log10_316.2", "bldg_area_count_bin_10_2.75__log10_562.3", "bldg_area_count_bin_11_3.00__log10_1000", "bldg_area_count_bin_12_3.25__log10_1778.3", "bldg_area_count_bin_13_3.50__log10_3162.3", "bldg_area_count_bin_14_3.75__log10_5623.4", "bldg_area_count_bin_15_4.00__log10_10000", 
-             "bldg_area_m2_bin_01_0.50__log10_3.2", "bldg_area_m2_bin_02_0.75__log10_5.6", "bldg_area_m2_bin_03_1.00__log10_10", "bldg_area_m2_bin_04_1.25__log10_17.8", "bldg_area_m2_bin_05_1.50__log10_31.6", "bldg_area_m2_bin_06_1.75__log10_56.2", "bldg_area_m2_bin_07_2.00__log10_100", "bldg_area_m2_bin_08_2.25__log10_177.8", "bldg_area_m2_bin_09_2.50__log10_316.2", "bldg_area_m2_bin_10_2.75__log10_562.3", "bldg_area_m2_bin_11_3.00__log10_1000", "bldg_area_m2_bin_12_3.25__log10_1778.3", "bldg_area_m2_bin_13_3.50__log10_3162.3", "bldg_area_m2_bin_14_3.75__log10_5623.4", "bldg_area_m2_bin_15_4.00__log10_10000")
+             "on_network_street_length_meters", "off_network_street_length_meters", "nearest_external_street_meters")
+             #"bldg_area_count_bin_01_0.50__log10_3.2", "bldg_area_count_bin_02_0.75__log10_5.6", "bldg_area_count_bin_03_1.00__log10_10", "bldg_area_count_bin_04_1.25__log10_17.8", "bldg_area_count_bin_05_1.50__log10_31.6", "bldg_area_count_bin_06_1.75__log10_56.2", "bldg_area_count_bin_07_2.00__log10_100", "bldg_area_count_bin_08_2.25__log10_177.8", "bldg_area_count_bin_09_2.50__log10_316.2", "bldg_area_count_bin_10_2.75__log10_562.3", "bldg_area_count_bin_11_3.00__log10_1000", "bldg_area_count_bin_12_3.25__log10_1778.3", "bldg_area_count_bin_13_3.50__log10_3162.3", "bldg_area_count_bin_14_3.75__log10_5623.4", "bldg_area_count_bin_15_4.00__log10_10000", 
+             #"bldg_area_m2_bin_01_0.50__log10_3.2", "bldg_area_m2_bin_02_0.75__log10_5.6", "bldg_area_m2_bin_03_1.00__log10_10", "bldg_area_m2_bin_04_1.25__log10_17.8", "bldg_area_m2_bin_05_1.50__log10_31.6", "bldg_area_m2_bin_06_1.75__log10_56.2", "bldg_area_m2_bin_07_2.00__log10_100", "bldg_area_m2_bin_08_2.25__log10_177.8", "bldg_area_m2_bin_09_2.50__log10_316.2", "bldg_area_m2_bin_10_2.75__log10_562.3", "bldg_area_m2_bin_11_3.00__log10_1000", "bldg_area_m2_bin_12_3.25__log10_1778.3", "bldg_area_m2_bin_13_3.50__log10_3162.3", "bldg_area_m2_bin_14_3.75__log10_5623.4", "bldg_area_m2_bin_15_4.00__log10_10000")
 
 divide_cols = list('average_building_area_m2' = c('building_area_m2','building_count'),
                    'average_parcel_area_m2' = c('block_area_m2','parcel_count'),
@@ -422,7 +423,7 @@ ggsave(plot = scatter_by_country_4way_3, filename = paste0(wd_output,'/viz/scatt
 
 rm(scatter_by_country_4way, scatter_by_country_4way_1, scatter_by_country_4way_2, scatter_by_country_4way_3)
 
-# Histograms --------------------------------------------------------------
+# Histograms Figure 2 --------------------------------------------------------------
 
 histogram_africa_data <- generate_crosstabs(data = df_combined_prep, 
                                        group_by_cols = c('continent', 'class_urban_paper'), 
@@ -446,6 +447,7 @@ histogram_africa_data <- histogram_africa_data %>%
   mutate(pos_id_val = (cumsum(landscan_population_un) - 0.5*landscan_population_un)) %>%
   ungroup()
 
+# Figure 2A
 (histogram_africa <- ggplot() +
     geom_bar(data = histogram_africa_data, aes(y = group_val, x = landscan_population_un, 
                                                fill = class_urban_paper), color = 'white', linewidth = .3, stat="identity") + 
@@ -477,6 +479,7 @@ area4_pie_data <- histogram_africa_data %>%
   arrange(factor(class_urban_paper, levels = rev(c( "1 - Urban","2 - Secondary urban","3 - Peri-urban","4 - Rural")))) %>%
   mutate(pos_id_val = (cumsum(share) - 0.5*share)) 
 
+# Figure 2B
 (area4_pie <- ggplot(data = area4_pie_data, 
                      aes(x="", y=share, fill=class_urban_paper)) +
     geom_bar(stat="identity", width=1.25, color="white") +
@@ -517,6 +520,7 @@ grey2 <- c('#414141','#777777')
 kdist = length(unique(k_pie_data$group_val))
 colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC556','#F9F871'))(length(unique(k_pie_data$group_val))-2)
 
+# Figure 2C
 (k_pie <- ggplot(data = k_pie_data, 
                  aes(x="", y=share, fill=group_val)) +
     geom_bar(stat="identity", width=1.25, color="white") +
@@ -542,110 +546,14 @@ colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC55
 
 ggsave(plot = histogram_africa_pies, filename = paste0(wd_output,'/viz/histogram_africa_pies.pdf'), width = 15, height = 7)
 
+write_xlsx(list('Figure_2A' = histogram_africa_data, 'Figure_2B' = area4_pie_data, 
+                'Figure_2C' = k_pie_data), 
+           col_names = TRUE, format_headers = TRUE, path = paste0(wd_output,'/data/figure2data.xlsx'))
+
 rm(histogram_africa_data, histogram_africa, histogram_africa_pies)
 rm(area4_pie, area4_pie_data, k_pie, k_pie_data)
 
-
-# Building footprint distribution -----------------------------------------
-  
-histogram_buildings <- generate_crosstabs(data = df_combined_prep, 
-                                         group_by_cols = c("continent", "class_urban_paper"), 
-                                         crosstab_cols = c("k_0"),
-                                         sum_cols = sum_cols, divide_cols = divide_cols, 
-                                         transform_cols = transform_cols, transform_func_list = list(log10 = log_10),
-                                         group_by_agg_cols_list = list('continent' = c("continent"),
-                                                                       'continent_4way' = c("continent", "class_urban_paper")),
-                                         group_by_agg_func_list = list(sum = sum, share = share),
-                                         agg_cols = c('landscan_population_un', 'worldpop_population_un'))
-
-histogram_buildings <- histogram_buildings %>%
-  select(all_of(c("group_var", "group_val", "continent", 
-                  "class_urban_paper",
-                  "average_building_area_m2", "building_area_m2", "building_count", "bldg_area_count_bin_01_0.50__log10_3.2", "bldg_area_count_bin_02_0.75__log10_5.6", "bldg_area_count_bin_03_1.00__log10_10", "bldg_area_count_bin_04_1.25__log10_17.8", "bldg_area_count_bin_05_1.50__log10_31.6", "bldg_area_count_bin_06_1.75__log10_56.2", "bldg_area_count_bin_07_2.00__log10_100", "bldg_area_count_bin_08_2.25__log10_177.8", "bldg_area_count_bin_09_2.50__log10_316.2", "bldg_area_count_bin_10_2.75__log10_562.3", "bldg_area_count_bin_11_3.00__log10_1000", "bldg_area_count_bin_12_3.25__log10_1778.3", "bldg_area_count_bin_13_3.50__log10_3162.3", "bldg_area_count_bin_14_3.75__log10_5623.4", "bldg_area_count_bin_15_4.00__log10_10000"))) %>%
-  pivot_longer(cols = -one_of(c("group_var", "group_val", "continent", 
-                                "class_urban_paper",
-                                "average_building_area_m2", "building_area_m2", "building_count")),
-               names_to = "category", 
-               values_to = "values") %>%
-  mutate(bin_label = case_when(category == 'bldg_area_count_bin_01_0.50__log10_3.2' ~ '< 5.6', 
-                               category == 'bldg_area_count_bin_02_0.75__log10_5.6' ~ '5.6 to\n10', 
-                               category == 'bldg_area_count_bin_03_1.00__log10_10' ~ '10 to\n17', 
-                               category == 'bldg_area_count_bin_04_1.25__log10_17.8' ~ '17 to\n31\n(parking\nspace)', 
-                               category == 'bldg_area_count_bin_05_1.50__log10_31.6' ~ '31 to\n56', 
-                               category == 'bldg_area_count_bin_06_1.75__log10_56.2' ~ '56 to\n100', 
-                               category == 'bldg_area_count_bin_07_2.00__log10_100' ~ '100 to\n177', 
-                               category == 'bldg_area_count_bin_08_2.25__log10_177.8' ~ '177 to\n316', 
-                               category == 'bldg_area_count_bin_09_2.50__log10_316.2' ~ '316 to\n562\n(basketball\ncourt)', 
-                               category == 'bldg_area_count_bin_10_2.75__log10_562.3' ~ '562 to\n1K', 
-                               category %in% c('bldg_area_count_bin_11_3.00__log10_1000','bldg_area_count_bin_12_3.25__log10_1778.3',
-                                               'bldg_area_count_bin_13_3.50__log10_3162.3','bldg_area_count_bin_14_3.75__log10_5623.4',
-                                               'bldg_area_count_bin_15_4.00__log10_10000') ~ '> 1K')
-                               ) %>%
-  mutate(bin_label = factor(bin_label, levels = c('< 5.6', '5.6 to\n10', '10 to\n17', '17 to\n31\n(parking\nspace)', '31 to\n56', '56 to\n100', '100 to\n177', '177 to\n316', '316 to\n562\n(basketball\ncourt)', '562 to\n1K', '> 1K'))) %>%
-  group_by(bin_label, class_urban_paper) %>%
-  summarize_at(vars(values), list(sum)) %>%
-  ungroup() %>%
-  group_by(class_urban_paper) %>%
-  mutate(values_by_class = sum(values)) %>%
-  ungroup() %>%
-  mutate(share = values/values_by_class)
-  
-histogram_buildings <- histogram_buildings %>%
-  mutate(bin_label2 = case_when(bin_label == '< 5.6' ~ '2.8',
-                                bin_label == '5.6 to\n10' ~ '7.8',
-                                bin_label == '10 to\n17' ~ '13.5\n(parking\nspace)',
-                                bin_label == '17 to\n31\n(parking\nspace)' ~ '24',
-                                bin_label == '31 to\n56' ~ '43.5',
-                                bin_label == '56 to\n100' ~ '78',
-                                bin_label == '100 to\n177' ~ '138.5',
-                                bin_label == '177 to\n316' ~ '246.5',
-                                bin_label == '316 to\n562\n(basketball\ncourt)' ~ '439\n(basketball\ncourt)',
-                                bin_label == '562 to\n1K' ~ '781',
-                                bin_label == '> 1K' ~ '> 1K')) %>%
-  mutate(bin_label2 = factor(bin_label2, levels = c('2.8', '7.8', '13.5\n(parking\nspace)', '24', '43.5', '78', '138.5', '246.5', '439\n(basketball\ncourt)', '781', '> 1K')))
-
-
-(bldgs_bar <- ggplot(data = histogram_buildings, aes(x = bin_label2, y = values, 
-                                                     fill = class_urban_paper)) +
-    geom_bar(stat='identity') + 
-    scale_x_discrete(expand = c(0.05,0.05)) +
-    scale_y_continuous(expand = c(0, 0), labels = label_comma(accuracy = 1L, scale =  0.000001, suffix = "M") ) +
-    scale_fill_manual(values = c('#08519c','#9ecae1','#006d2c','#a1d99b')) +
-    labs(x = expression("Building footprint area, m"^2) ,
-         y = 'Building count') +
-    theme_classic() + 
-    theme(legend.position = 'bottom',
-          legend.title = element_blank()))
-
-(bldgs_density <- ggplot(data = histogram_buildings, 
-                         aes(x = bin_label2, y = share, 
-                             group = class_urban_paper)) +
-    geom_smooth(linewidth = 1.5, 
-                aes(fill = class_urban_paper, color = class_urban_paper), se = FALSE,
-                method = 'loess', span = 0.4, alpha = .9)+
-    scale_x_discrete(expand = c(0.05,0.05)) +
-    scale_fill_manual(values = c('#08519c','#9ecae1','#006d2c','#a1d99b')) +
-    scale_color_manual(values = c('#08519c','#9ecae1','#006d2c','#a1d99b')) +
-    labs(x = expression("Building footprint area, m"^2) ,
-         y = 'Density') +
-    theme_classic() + 
-    theme(legend.position = 'none',
-          legend.title = element_blank()) + guides(fill = "none", color = 'none') )
-
-(bldgs_charts <- bldgs_bar + bldgs_density +
-  plot_layout(guides = 'collect') &
-    plot_annotation(tag_levels = list(c("A","B"))) & 
-  theme(text = element_text(size = 14, color = '#333333'),
-        plot.tag = element_text(size = 13),
-        axis.text = element_text(size = 12,  color = '#333333'),
-        legend.text = element_text(size = 12,  color = '#333333'),
-        legend.position = 'bottom'))
-
-ggsave(plot = bldgs_charts, filename = paste0(wd_output,'/viz/bldg_area_charts_2.pdf'), width = 15.672, height = 8) # dpi = 300, 
-rm(bldgs_charts, bldgs_density, bldgs_bar)
-
-
-# Urban center bars -------------------------------------------------------
+# Urban center bars Figure 3 -------------------------------------------------------
 
 urban_bars_data <- generate_crosstabs(data = df_combined_prep %>% 
                                         filter(class_urban_paper %in% c('1 - Urban')),
@@ -729,6 +637,7 @@ colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC55
           panel.grid = element_blank(),
           plot.subtitle = element_text(size = 15, hjust=.5, color = '#434343')))
 
+# Figure 3
 (urban_bars <- a + b + plot_layout(guides = 'collect') + 
     plot_annotation(tag_levels = list(c("A","B"))) & 
     theme(plot.tag = element_text(size = 14)) & # &  plot_annotation(title = 'Urban areas') 
@@ -736,6 +645,10 @@ colorhexes <- colorRampPalette(c('#93328E','#CF3F80','#F7626B','#FF925A','#FFC55
     guides(fill = guide_legend(nrow = 1, reverse = TRUE), color = guide_legend(nrow = 1, reverse = TRUE)) )
 
 ggsave(plot = urban_bars, filename = paste0(wd_output,'/viz/urban_bars.pdf'), width = 15.672, height = 8) # dpi = 300, 
+
+write_xlsx(list('Figure_3' = urban_bars_data), 
+           col_names = TRUE, format_headers = TRUE, path = paste0(wd_output,'/data/figure3data.xlsx'))
+
 rm(a, b, urban_bars, urban_bars_data)
 
 # Conurbation bars --------------------------------------------------------
@@ -1090,7 +1003,7 @@ area_data <- arrow::open_dataset('data/blocks_lusaka.parquet') %>%
   st_make_valid()
 
 
-# Zoom map ----------------------------------------------------------------
+# Zoom map Figure 1 ----------------------------------------------------------------
 
 sites <- data.frame(place=c('nga','sle','zmb'),
                     longitude=c(3.34926, -13.22970641, 28.2474993),

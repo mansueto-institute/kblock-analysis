@@ -504,7 +504,6 @@ dhs_dict_df <- dhs_indicators() %>%
   filter(!is.na(order)) %>%
   arrange(order)
 
-
 # Correlations table ------------------------------------------------------
 
 streets_dhs_regions <- read_csv('data/streets_dhs_regions.csv') %>%
@@ -1347,7 +1346,7 @@ design3 <- "
   ))
 
 
-#
+# Figure 4
 (dhs_k_v_pca_grob <- gridExtra::grid.arrange(patchwork::patchworkGrob(dhs_k_v_pca), 
                         left = text_grob(paste0('PC1 of PCA on DHS indicators'), rot = 90, vjust = 1, size = 15, face = "bold"), 
                         bottom = text_grob("Block complexity", rot = 0, vjust = -9, size = 15, face = "bold") ) )
@@ -1355,8 +1354,12 @@ design3 <- "
 # subnat_clusters %>% select(ISO) %>% distinct()
 # "PCA on the following dimensions: percentage of de jure population with an improved sanitation facility; with an improved water source on the premises; with basic sanitation service; basic water service; earth/sand floors; with electricity; with limited sanitation service; with limited water service; with natural floors; with water on the premises; in each wealth quintile; living in households whose main source of drinking water is an improved source; mean number of persons per sleeping room; and percentage of households with 1 to 2, 3 to 4, 5 to 6, or 7 or more persons per sleeping room; percentage of women who are literate."
 
+write_xlsx(list('Figure_4' = subnat_clusters %>% select(SurveyYear, SurveyId, REG_ID, REGCODE, DHSREGEN, CNTRYNAMEE, ISO, k_complexity_average, ED_LITR_W_LIT, WS_SRCE_P_IOP, WS_TLET_P_IMP, HC_WIXQ_P_HGH, landscan_population_un_density_hectare)), 
+           col_names = TRUE, format_headers = TRUE, path = paste0(wd_path,'/data/dhs-analysis/data/figure4data.xlsx'))
+
 ggsave(plot = dhs_k_v_pca_grob, filename = paste0(wd_path,'/data/dhs-analysis/viz/scatter_k_PC1.pdf'), width = 16, height = 12)  
 rm(dhs_k_v_pca_grob)
+
 # 4 x 3  ------------------------------------------------------------------
 
 (dhs_k_v_pca_4x3 <- (ggplot(data = subnat_clusters, aes(x = log10(k_complexity_average), y = PC1, color = EM_OCCP_M_AGR)) +
