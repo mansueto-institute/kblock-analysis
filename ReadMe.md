@@ -31,7 +31,7 @@
 * To ground-truth block complexity statistics use [sdi-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/sdi-analysis.R) which compares block geometries to SDI settlements. Note, the data requires special access permissions. Contact authors for more information.
 * To validate the completeness of OSM street data use [street-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/street-analysis.R) which utilizes three data files: [streets_metrics.parquet](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/streets_metrics.parquet), [streets_summary.csv](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/streets_summary.csv), and [streets_validation.csv](https://github.com/mansueto-institute/kblock-analysis/blob/main/data/streets_validation.csv).
 * To compare block complexity performance to alternative predictors of wealth, see these [statistical comparisons](https://gist.github.com/nmarchio/a03ebe075489f57eb157799578a62646) with [Blumenstock et al. (2022)](https://www.pnas.org/doi/10.1073/pnas.2113658119) and [Yeh et al. (2020)](https://www.nature.com/articles/s41467-020-16185-w#Fig3)
-* To test the fit of the following distributions to different geographies use [distribution-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/distribution-analysis.R). 
+* To test the fit of the following distributions to different geographies use [distribution-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/distribution-analysis.R). For building footprint area distribution analysis use [bldg-area-analysis.R](https://github.com/mansueto-institute/kblock-analysis/blob/main/bldg-area-analysis.R).
 
 
 ### Workflow diagram:
