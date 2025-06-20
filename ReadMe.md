@@ -95,7 +95,7 @@ style Q fill: #b1d8b7
 
 
 ## Contact 
-Nicholas Marchio, data scientist at the Mansueto Institute. For any technical inquiries please feel free to create a Git issue and tag `nmarchio`. DOI-minted version of this repo is available at [https://zenodo.org/records/12639776](https://zenodo.org/records/12639776).
+Nicholas Marchio, data scientist at the Mansueto Institute. For any technical inquiries please feel free to create a Git issue and tag `nmarchio`. DOI-minted version of this repo is available at [https://zenodo.org/records/15702173](https://zenodo.org/records/15702173).
 
 For related technical work see the following repos:
 * [kblock](https://github.com/mansueto-institute/kblock): Python codebase for generating the underlying block complexity and population data available at [millionneighborhoods.africa](millionneighborhoods.africa). Data is also available at [https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/DQY54U](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/DQY54U).
