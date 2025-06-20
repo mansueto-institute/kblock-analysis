@@ -997,7 +997,7 @@ iso_table <- subnat_pca %>% rename(Country = CNTRYNAMEE) %>% select(ISO, Country
   mutate(Country = gsub(pattern = 'Congo Democratic Republic', replacement= 'DR Congo', x = Country))
 
 # Select PCA input variables ----------------------------------------------
-
+?prcomp
 pca_out <- prcomp(pca_in, center = TRUE, scale. = TRUE)
 screeplot(pca_out, npcs = 70, type = "lines")
 
@@ -1194,6 +1194,25 @@ writexl::write_xlsx(list('pca_regression' = reg_pca_output,
 
 # Latex -------------------------------------------------------------------
 
+k_coeff = reg_pca_output[, !duplicated(as.list(reg_pca_output))] %>%
+  filter(predictors == 'k', 
+         term == 'k_complexity_average') %>% 
+  select(estimate) %>% pull()
+
+loading_effect = pca_in %>% summarise(across(where(is.numeric), ~mean(.x, na.rm = TRUE))) %>%
+  pivot_longer(everything(), names_to = "column_var", values_to = "sd_pca_in") %>%
+  mutate(sd_k_coeff = sd_pca_in * k_coeff)
+
+loading_uncenter = pca_in %>% summarise(across(where(is.numeric), ~sd(.x, na.rm = TRUE))) %>%
+  pivot_longer(everything(), names_to = "column_var", values_to = "mean_pca_in")
+
+treatment_effect <- combined_reg_output %>%
+  filter(term == 'k_complexity_average',
+         predictors == 'k',
+         distribution == 'binomial') %>%
+  mutate(k_on_indicator = 1/(1+exp(-estimate)) - .5 # inverse logit transform and center on 0
+  ) %>% select(dv_var, k_on_indicator)
+
 latex_table <- cor_dhs %>% 
   select(column_var, category, subcategory, estimate, n, order) %>%
   inner_join(., dhs_latex_labels, by = c('column_var'='indicatorid')) %>%
@@ -1201,7 +1220,14 @@ latex_table <- cor_dhs %>%
   mutate(estimate  = round(estimate, 4),
          PC1 = round(PC1, 3),
          PC2 = round(PC2, 3)) %>%
-  relocate(category, subcategory, latex_label, estimate, n, PC1, PC2, order, column_var) %>%
+  left_join(., loading_effect, by = c('column_var'='column_var')) %>%
+  left_join(., loading_uncenter, by = c('column_var'='column_var')) %>%
+  left_join(., treatment_effect, by = c('column_var'='dv_var')) %>%
+  mutate(k_on_loading = sd_k_coeff*PC1,
+         k_on_loading_uncenter = k_on_loading + mean_pca_in) %>%
+  mutate(across(c('k_on_loading','k_on_indicator'), ~ round(.x, 3)),
+         across(c('k_on_loading','k_on_indicator'), ~ replace(.x, is.na(.x), ""))) %>%
+  relocate(category, subcategory, latex_label, estimate, n, PC1, k_on_loading, k_on_indicator, PC2, order, column_var) %>%
   mutate(in_pca = case_when(!is.na(PC1) ~ 'Yes', TRUE ~ as.character(''))) %>%
   mutate_at(c('PC1','PC2'), as.character) %>%
   mutate_at(c('PC1','PC2'), ~replace_na(.,"")) %>%
@@ -1219,6 +1245,7 @@ latex_table <- cor_dhs %>%
                                   TRUE ~ as.character(latex_format))
            )
 
+write_csv(latex_table, paste0(wd_path,'/data/dhs-analysis/data/latex_data.csv'))
 
 latex_code_df <- data.frame(latex_format=character())
                             
